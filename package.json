@@ -1,0 +1,26 @@
+{
+  "name": "realloc",
+  "version": "0.0.0",
+  "description": "A Immutable State Manager for Javascript Applications",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "functional",
+    "immutable",
+    "state",
+    "manager",
+    "flux",
+    "react"
+  ],
+  "author": "foomorrow",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-core": "^6.0.14",
+    "babel-loader": "^6.0.0",
+    "eslint": "^1.8.0",
+    "jest-cli": "^0.6.1",
+    "webpack": "^1.12.2"
+  }
+}
