@@ -1,6 +1,6 @@
 {
   "name": "realloc",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A Immutable State Manager for Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
