@@ -1,6 +1,14 @@
+
+/**
+ * 
+ *
+ *
+ */
+
 var ArrayProto = Array.prototype
   , ObjProto = Object.prototype
   , FuncProto = Function.prototype;
+
 var nativeIsArray      = Array.isArray
   , nativeKeys         = Object.keys
   , nativeBind         = FuncProto.bind

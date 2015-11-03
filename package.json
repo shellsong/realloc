@@ -1,26 +1,35 @@
 {
   "name": "realloc",
   "version": "0.0.1",
-  "description": "A Immutable State Manager for Javascript Applications",
+  "description": "Observable, Immutable State Manager for Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jasmine",
+    "lint": "eslint src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/foomorrow/realloc.git"
   },
   "keywords": [
+    "realloc",
     "functional",
     "immutable",
     "state",
-    "manager",
+    "predictable",
     "flux",
     "react"
   ],
   "author": "foomorrow",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/foomorrow/realloc/issues"
+  },
   "devDependencies": {
-    "babel-core": "^6.0.14",
-    "babel-loader": "^6.0.0",
+    "babel-core": "^5.8.33",
+    "babel-loader": "^5.3.3",
     "eslint": "^1.8.0",
-    "jest-cli": "^0.6.1",
+    "jasmine": "^2.3.2",
     "webpack": "^1.12.2"
   }
 }
