@@ -4,7 +4,7 @@
   "description": "Observable, Immutable State Manager for Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
-    "test": "jasmine",
+    "test": "JASMINE_CONFIG_PATH=test/support/jasmine.json jasmine",
     "lint": "eslint src"
   },
   "repository": {
