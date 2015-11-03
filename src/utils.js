@@ -1,13 +1,13 @@
 
 /**
- * 
+ *
  *
  *
  */
 
 var ArrayProto = Array.prototype
   , ObjProto = Object.prototype
-  , FuncProto = Function.prototype;
+  , FuncProto = Function.prototype
 
 var nativeIsArray      = Array.isArray
   , nativeKeys         = Object.keys
@@ -18,19 +18,19 @@ var nativeIsArray      = Array.isArray
   , push               = ArrayProto.push
   , slice              = ArrayProto.slice
   , nativeAssign       = Object.assign
-  ;
+
 
 export const isUndefined = function (obj){
-  return obj === void 0;
+  return obj === void 0
 }
 
 export const isObject = function (obj){
-  var type = typeof obj;
-  return type === 'function' || type === 'object' && !!obj;
+  var type = typeof obj
+  return type === 'function' || type === 'object' && !!obj
 }
 
 export const isArray = nativeIsArray || function (obj){
-  return toString.call(obj) === '[object Array]';
+  return toString.call(obj) === '[object Array]'
 }
 
 export const isFunction = function (obj){
@@ -38,23 +38,23 @@ export const isFunction = function (obj){
 }
 
 export const has = function (obj, key){
-  return obj != null && hasOwnProperty.call(obj, key);
+  return obj != null && hasOwnProperty.call(obj, key)
 }
 
 export const pairs = function (obj){
-  var arr = [];
+  var arr = []
   for(var k in obj){
     if(has(obj, k)){
       arr.push([k, obj[k]])
     }
   }
-  return arr;
+  return arr
 }
 
 export const keys = nativeKeys || function (obj){
-  var keys = [];
-  for (var key in obj) if (has(obj, key)) keys.push(key);
-  return keys;
+  var keys = []
+  for (var key in obj) if (has(obj, key)) keys.push(key)
+  return keys
 }
 
 export const assign = nativeAssign || function(target, ...sources){
@@ -76,7 +76,7 @@ export const shallowClone = function (obj){
 }
 
 export const findIndex = function (arr, predicate, context = null){
-  var index;
+  var index
   for(index = 0;index < arr.length;index++){
     if(predicate.call(context, arr[index], index)) return index
   }
