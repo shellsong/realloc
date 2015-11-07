@@ -21,8 +21,12 @@ export default const store = createObservableStore({
 ```javascript
 // actions.js
 import { createAction } from './store'
-export const addTodo = createAction('$.todos', (text,  todos, resolve) => resolve(todos.concat({title:text, active:true })))
-export const toggleTodoActive = createAction('$.todos.{id}.active', (payload, oldActiveOfTodo, resolve) => resolve(!oldActiveOfTodo))
+export const addTodo = createAction('$.todos', (text,  todos, resolve) => {
+  resolve(todos.concat({title:text, active:true }))
+})
+export const toggleTodoActive = createAction('$.todos.{id}.active', (payload, oldStateOfTodo, resolve) => {
+  resolve(!oldStateOfTodo)
+})
 export const updateTodoText = createAction('$.todos.{id}.text', (payload, todo, resolve) => {
   resolve({
     id:todo.id,
@@ -30,7 +34,9 @@ export const updateTodoText = createAction('$.todos.{id}.text', (payload, todo, 
     active:todo.active
   })
 })
-export const removeTodo = createAction('$.todos', (payload, todos, () => resolve(todos.filter((t) => t !== payload.todo ))))
+export const removeTodo = createAction('$.todos', (payload, todos, () => {
+  resolve(todos.filter((t) => t !== payload.todo )))
+})
 ```
 ```javascript
 // TodoApp.js

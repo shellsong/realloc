@@ -1,31 +1,6 @@
-const {
-  applyMiddlewares,
-  lexers,
-  parseJSONPath
-} = require('../../src/parseJSONPath')
+const Compiler = require('../../src/JSONPathCompiler')
+const { lexers, parseJSONPath } = Compiler
 
-describe('test apply middleware', () => {
-  it('should be reverse', () => {
-    expect(applyMiddlewares('', [
-      [
-        (input, ctx) => input + '+0',
-        (input, ctx) => input + '-0'
-      ],
-      [
-        (input, ctx) => input + '+1',
-        (input, ctx) => input + '-1'
-      ],
-      [
-        (input, ctx) => input + '+2',
-        (input, ctx) => input + '-2'
-      ],
-      [
-        (input, ctx) => input + '+3',
-        (input, ctx) => input + '-3'
-      ]
-    ])).toBe('+0+1+2+3-3-2-1-0')
-  })
-})
 
 describe('parse json path', () => {
   it('$', () => {

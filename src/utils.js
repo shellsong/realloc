@@ -86,3 +86,17 @@ export const findIndex = function (arr, predicate, context = null){
 export const compose = function compose(...fns){
   //TODO
 }
+
+export function stackProcess(expr, fns, context = {}){
+  var head = fns[0]
+    , tails = fns.slice(1)
+    , preProcessor = head[0]
+    , postProcessor = head[1] || ((a) => a)
+
+  var preResult = preProcessor(expr, context)
+  if(!tails.length){
+    return postProcessor(preResult, context)
+  }else{
+    return postProcessor(stackProcess(preResult, tails, context), context)
+  }
+}
