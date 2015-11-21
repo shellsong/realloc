@@ -116,7 +116,11 @@ describe('create compiler', () => {
     }])
   })
   it('*, all values', () => {
-
+    var compiler = new Compiler('$.store.book.*.price')
+    var fn = compiler.createMatcher()
+    // console.log(fn.toString())
+    var result = fn(source)
+    expect(result.map((r) => r.value)).toEqual([8.95, 12.99, 8.99, 22.99])
   })
   it('recursive descent', () => {
 

@@ -5,16 +5,14 @@ var path = require('path')
 
 module.exports = {
   devtool:'cheap-module-source-map',
-  umd:true,
-  context:path.join(__dirname, '..', 'src'),
+  amd:true,
+  context:path.join(__dirname, '.', 'js'),
   entry:{
-    index:['./index']
+    bundle:['./main']
   },
   output:{
-    path:path.join(__dirname, '..', 'lib'),
-    filename: '[name].js',
-    library: 'Realloc',
-    libraryTarget: "umd"
+    path:path.join(__dirname, '.', 'js'),
+    filename: '[name].js'
   },
   module:{
     loaders:[{

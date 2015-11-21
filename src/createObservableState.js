@@ -1,4 +1,4 @@
-import { parseJSONPath } from './parseJSONPath'
+import { parseJSONPath } from './JSONPathCompiler'
 import actionCreatorFactory from './actionCreatorFactory'
 export default function createObservableState(initialState = {}, options = {}){
   let currentState = {
@@ -30,17 +30,23 @@ export default function createObservableState(initialState = {}, options = {}){
       }, 1)
     }
   })
-  function watch(listenPath, keyPath, fn, opts){
-    const parsedListenPath = parseJSONPath(listenPath).join('')
+  function watch(listenPaths, keyPath, fn, opts){
+    const parsedListenPaths = listenPaths.map((listenPath) => {
+      return parseJSONPath(listenPath).join('')
+    })
     const action = createAction(keyPath, fn, opts)
-    if(!broadcastMap[parsedListenPath]){
-      broadcastMap[parsedListenPath] = [action]
-    }else{
-      broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].concat([action])
-    }
+    parsedListenPaths.forEach((parsedListenPath) => {
+      if(!broadcastMap[parsedListenPath]){
+        broadcastMap[parsedListenPath] = [action]
+      }else{
+        broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].concat([action])
+      }
+    })
     return () => {
-      broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].filter((a) => {
-        return a !== action
+      parsedListenPaths.forEach((parsedListenPath) => {
+        broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].filter((a) => {
+          return a !== action
+        })
       })
     }
   }

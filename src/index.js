@@ -1,13 +1,10 @@
 import createObservableState from './createObservableState'
 import actionCreatorFactory from './actionCreatorFactory'
-import {createGetter, createSetter, evalJSONPath} from './createJSONPathAccessor'
-import {parseJSONPath} from './parseJSONPath'
+import { Compiler, parseJSONPath } from './JSONPathCompiler'
 
 export default {
   createObservableState,
   actionCreatorFactory,
-  createGetter,
-  createSetter,
-  evalJSONPath,
+  Compiler,
   parseJSONPath
 }

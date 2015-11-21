@@ -1,5 +1,5 @@
 import { clone } from './utils'
-import Compiler, { parseJSONPath } from './JSONPathCompiler'
+import { Compiler, parseJSONPath } from './JSONPathCompiler'
 
 export default function actionCreatorFactory(stateParent, broadcastMap, collect){
   return (keyPath, fn, opts) => {
@@ -39,7 +39,7 @@ export default function actionCreatorFactory(stateParent, broadcastMap, collect)
                 })
                 newCur[result.name] = newValue
                 collect($)
-                castFns.forEach((fn) => fn.apply(null, payloads))
+                castFns.forEach((fn) => fn.apply(null, []))
               },
               result
             ]
@@ -48,5 +48,4 @@ export default function actionCreatorFactory(stateParent, broadcastMap, collect)
       })
     }
   }
-
 }

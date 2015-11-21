@@ -15,13 +15,31 @@ export class Compiler {
     if('..' === expr){
       return [
         (input,ctx) => {
+          // TODO recursive
           return input + ''
         }
       ]
     }else if('*' === expr){
       return [
         (input,ctx) => {
-          return input + ''
+          return input +
+                '\nfor(var i'+lv+' in $'+(lv - 1)+'){\n'+
+                    'if($'+(lv - 1)+'.hasOwnProperty(i'+lv+')){\n'+
+                      'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
+                      (isLast?(
+                      'matches.push({' +
+                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                        'name: i'+lv+','+
+                        'value: $' + lv +
+                      '});\n'
+                      ):(
+                      'var pwd' + lv + ' = i'+lv+';\n'
+                      ))
+        },
+        (input, ctx) => {
+          return input +
+                  '\n}\n'+
+                '\n}\n'
         }
       ]
     }else if(/^\d+(,\d+)*$/.test(expr)){
@@ -30,21 +48,19 @@ export class Compiler {
           return input +
                 '\nvar k'+lv+' = ['+expr+'];\n'+
                 '\nfor(var i'+lv+' = 0; i'+lv+' < k'+lv+'.length; i'+lv+'++){\n'+
-                    'if(true){\n'+ //TODO
-                      'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
-                      (isLast?(
-                      'matches.push({' +
-                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
-                        'name: k'+lv+'[i'+lv+'],'+
-                        'value: $' + lv +
-                      '});\n'
-                      ):(
-                      'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
-                      ))
+                    'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
+                    (isLast?(
+                    'matches.push({' +
+                      'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                      'name: k'+lv+'[i'+lv+'],'+
+                      'value: $' + lv +
+                    '});\n'
+                    ):(
+                    'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
+                    ))
         },
         (input, ctx) => {
           return input +
-                  '\n}\n'+
                 '\n}\n'
         }
       ]
@@ -55,21 +71,19 @@ export class Compiler {
           return input +
                 '\nvar k'+lv+' = ['+indexes.join(', ')+'];\n'+
                 '\nfor(var i'+lv+' = 0; i'+lv+' < k'+lv+'.length; i'+lv+'++){\n'+
-                    'if(true){\n'+ //TODO
-                      'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
-                      (isLast?(
-                      'matches.push({' +
-                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
-                        'name: k'+lv+'[i'+lv+'],'+
-                        'value: $' + lv +
-                      '});\n'
-                      ):(
-                      'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
-                      ))
+                    'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
+                    (isLast?(
+                    'matches.push({' +
+                      'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                      'name: k'+lv+'[i'+lv+'],'+
+                      'value: $' + lv +
+                    '});\n'
+                    ):(
+                    'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
+                    ))
         },
         (input, ctx) => {
           return input +
-                  '\n}\n'+
                 '\n}\n'
         }
       ]
@@ -77,7 +91,7 @@ export class Compiler {
       return [
         (input, ctx) => {
           return input +
-                '\nfor(var i'+lv+' = 0; i'+lv+' < $' + (lv - 1) + '.length; i'+lv+'++){\n' +
+                '\nfor(var i'+lv+' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i'+lv+'++){\n' +
                     'if(' +
                       expr.substring(1).replace(/@/g,'$'+(lv - 1)+'[i'+lv+']') +
                     '){\n'+
