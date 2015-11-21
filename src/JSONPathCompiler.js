@@ -12,7 +12,6 @@ export class Compiler {
     })
   }
   _parseExpr(expr, lv, isLast){
-    var k = 'k' + lv
     if('..' === expr){
       return [
         (input,ctx) => {
