@@ -19705,9 +19705,7 @@
 	    var _this = this;
 
 	    this._unsubscribe = _store.subscribe(function (state) {
-	      _this.setState(state, function () {
-	        console.log(_store.getState());
-	      });
+	      _this.setState(state);
 	    });
 	  };
 
@@ -20469,12 +20467,13 @@
 								payloads[_key] = arguments[_key];
 							}
 
-							return matcher(stateParent.$, payloads).map(function (result) {
-								return fn.apply(null, payloads.concat(depsGetters.map(function (get) {
-									return get(stateParent.$, payloads).map(function (r) {
-										return r.value;
-									});
-								})).concat([result.value, function (newValue) {
+							var matchDeps = depsGetters.map(function (get) {
+								return get(stateParent.$, payloads).map(function (r) {
+									return r.value;
+								});
+							});
+							var execResults = matcher(stateParent.$, payloads).map(function (result) {
+								return fn.apply(null, payloads.concat(matchDeps).concat([result.value, function (newValue) {
 									var $ = _utils.clone(stateParent.$),
 									    newCur = $,
 									    oldCur = stateParent.$,
@@ -20491,11 +20490,12 @@
 									});
 									newCur[result.name] = newValue;
 									collect($);
-									castFns.forEach(function (fn) {
-										return fn.apply(null, []);
-									});
 								}, result]));
 							});
+							castFns.forEach(function (fn) {
+								return fn.apply(null, []);
+							});
+							return execResults;
 						};
 					};
 				}
@@ -20643,7 +20643,7 @@
 	    this._onDestroyClick = this._onDestroyClick.bind(this);
 	  }
 
-	  TodoItem.prototype._onSave = function _onSave() {
+	  TodoItem.prototype._onSave = function _onSave(text) {
 	    _actionsUpdateTodo2['default']({
 	      id: this.props.todo.id,
 	      text: text
@@ -20772,8 +20772,8 @@
 
 	var _store = __webpack_require__(164);
 
-	exports['default'] = _store.createAction('$.todos[?(@.id === payload.id)]', function (payload, todos, res) {
-	  res(Object.assign({}, todo, { text: payload.text }));
+	exports['default'] = _store.createAction('$.todos[?(@.id === {id})].text', function (payload, oldText, res) {
+	  res(payload.text);
 	});
 	module.exports = exports['default'];
 
@@ -20819,10 +20819,12 @@
 
 	var _store = __webpack_require__(164);
 
-	exports['default'] = _store.createAction('$.todos.*.complete', function (areAllComplete, _, res) {
-	  res(areAllComplete[0]);
+	exports['default'] = _store.createAction('$.todos.*.complete', function (allComplete, _, res) {
+	  res(!allComplete.every(function (i) {
+	    return i;
+	  }));
 	}, {
-	  deps: ['$.areAllComplete']
+	  deps: ['$.todos.*.complete']
 	});
 	module.exports = exports['default'];
 
@@ -20918,7 +20920,7 @@
 
 	var _store = __webpack_require__(164);
 
-	exports['default'] = _store.createAction('$.todos', function (payload, todos, res) {
+	exports['default'] = _store.createAction('$.todos', function (todos, res) {
 	  res(todos.filter(function (todo) {
 	    return !todo.complete;
 	  }));

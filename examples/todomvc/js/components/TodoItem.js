@@ -15,7 +15,7 @@ export default class TodoItem extends Component {
     this._onDoubleClick = this._onDoubleClick.bind(this)
     this._onDestroyClick = this._onDestroyClick.bind(this)
   }
-  _onSave(){
+  _onSave(text){
     updateTodo({
       id:this.props.todo.id,
       text:text

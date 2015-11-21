@@ -14,11 +14,12 @@ export default function actionCreatorFactory(stateParent, broadcastMap, collect)
                            .map((k) => broadcastMap[k])
                            .reduce((acc,i) => acc.concat(i), [])
     return (...payloads) => {
-      return matcher(stateParent.$, payloads).map((result) => {
+      var matchDeps = depsGetters.map((get) => get(stateParent.$, payloads).map((r) => r.value))
+      var execResults = matcher(stateParent.$, payloads).map((result) => {
         return fn.apply(
           null,
           payloads.concat(
-            depsGetters.map((get) => get(stateParent.$, payloads).map((r) => r.value))
+            matchDeps
           ).concat(
             [
               result.value,
@@ -39,13 +40,15 @@ export default function actionCreatorFactory(stateParent, broadcastMap, collect)
                 })
                 newCur[result.name] = newValue
                 collect($)
-                castFns.forEach((fn) => fn.apply(null, []))
+
               },
               result
             ]
           )
         )
       })
+      castFns.forEach((fn) => fn.apply(null, []))
+      return execResults
     }
   }
 }

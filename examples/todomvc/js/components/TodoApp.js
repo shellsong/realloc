@@ -10,7 +10,7 @@ export default class TodoApp extends Component{
   }
   componentDidMount(){
     this._unsubscribe = subscribe((state) => {
-      this.setState(state, () => {console.log(getState())})
+      this.setState(state)
     })
   }
   componentWillUnmount(){

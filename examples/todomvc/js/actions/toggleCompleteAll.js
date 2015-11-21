@@ -1,7 +1,7 @@
 import {createAction} from '../store'
 
-export default createAction('$.todos.*.complete', (areAllComplete, _, res) => {
-  res(areAllComplete[0])
+export default createAction('$.todos.*.complete', (allComplete, _, res) => {
+  res(!allComplete.every((i) => i))
 }, {
-  deps:['$.areAllComplete']
+  deps:['$.todos.*.complete']
 })
