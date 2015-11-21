@@ -1,4 +1,4 @@
-const Compiler = require('../../src/JSONPathCompiler')
+const Compiler = require('../../../src/JSONPathCompiler')
 const { lexers, parseJSONPath } = Compiler
 
 
@@ -43,9 +43,9 @@ describe('parse json path', () => {
     expect(parseJSONPath('$..book[?(@.price<10)]')).toEqual(['$','..','["book"]','?(@.price<10)'])
   })
   it('$.store.{book}[?(@.price<{a.b})]', () => {
-    expect(parseJSONPath('$.store.{book}[?(@.price<{a.b})]')).toEqual(['$','["store"]','["{book}"]','?(@.price<{a.b})'])
+    expect(parseJSONPath('$.store.{book}[?(@.price<{a.b})]')).toEqual(['$','["store"]','[{book}]','?(@.price<{a.b})'])
   })
   it('$.store.{book}.{[0].a}', () => {
-    expect(parseJSONPath('$.store.{book}.{[0].a}')).toEqual(['$','["store"]','["{book}"]','["{[0].a}"]'])
+    expect(parseJSONPath('$.store.{book}.{[0].a}')).toEqual(['$','["store"]','[{book}]','[{[0].a}]'])
   })
 })

@@ -1,67 +1,176 @@
-import { stackProcess } from './utils'
+import { stackProcess, range} from './utils'
 
-export default class Compiler {
-  constructor(expr){
-    this._pathArray = parseJSONPath(expr)
-    this._normalizedExpression = this._pathArray.join('')
-  }
-  _getExprGroups(){
-    var exprGroups = []
-    this._pathArray
-      .map((lex) => {
-        return lex.replace(/\{([^\{]*)\}/g, ($0, $1) => {
-          return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0].') + $1
-        })
+export class Compiler {
+  constructor(exprs, notNormalized){
+    if(notNormalized !== false){
+      exprs = parseJSONPath(exprs)
+    }
+    this.exprArray = exprs.map((lex) => {
+      return lex.replace(/\{([^\{]*)\}/g, ($0, $1) => {
+        return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0].') + $1 + ''
       })
-      .forEach((i) => {
-        if(i === '$'|| i === '..'){
-          exprGroups.push([])
-        }else{
-          exprGroups[exprGroups.length - 1].push(i)
-        }
-      })
-    return exprGroups
-  }
-  toMultiGetter(){
-
-  }
-  toGetter(){
-    let exprGroups = this._getExprGroups()
-    return exprGroups.map((exprGroup) => {
-      return exprGroup.map((expr) => {
-        if(/^\?\(.*\)$/.test(expr)){
-          return 'cur = cur[findIndex(cur, function(__i){return ' + expr.substring(1).replace(/@/g,'__i') + ';})]'
-        }else if(/^\(.*\)$/.test(expr)){
-          return 'cur = cur[findKey(cur, function(){return ' + expr.replace(/@/g,'cur') + ';})]'
-        }else if(/^\d+(,\d+)*$/.test(expr)){
-          return 'cur = cur' + '[' + expr.split(',')[0] + ']'
-        }else if(/^\d+(:\d+){0,2}$/.test(expr)){
-          return 'cur = cur' + '['+expr.split(':')[0]+']'
-        }else if('*' === expr){
-          return 'cur = values(cur)[0]'
-        }else{
-          return 'cur = cur' + expr
-        }
-      }).join(';' + '\nif(!cur){return ;}\n')
     })
   }
-  toMultiSetter(){
-
+  _parseExpr(expr, lv, isLast){
+    var k = 'k' + lv
+    if('..' === expr){
+      return [
+        (input,ctx) => {
+          return input + ''
+        }
+      ]
+    }else if('*' === expr){
+      return [
+        (input,ctx) => {
+          return input + ''
+        }
+      ]
+    }else if(/^\d+(,\d+)*$/.test(expr)){
+      return [
+        (input,ctx) => {
+          return input +
+                '\nvar k'+lv+' = ['+expr+'];\n'+
+                '\nfor(var i'+lv+' = 0; i'+lv+' < k'+lv+'.length; i'+lv+'++){\n'+
+                    'if(true){\n'+ //TODO
+                      'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
+                      (isLast?(
+                      'matches.push({' +
+                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                        'name: k'+lv+'[i'+lv+'],'+
+                        'value: $' + lv +
+                      '});\n'
+                      ):(
+                      'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
+                      ))
+        },
+        (input, ctx) => {
+          return input +
+                  '\n}\n'+
+                '\n}\n'
+        }
+      ]
+    }else if(/^\d+(:\d+){0,2}$/.test(expr)){
+      return [
+        (input,ctx) => {
+          var indexes = range.apply(null, expr.split(':').map((i) => parseInt(i)))
+          return input +
+                '\nvar k'+lv+' = ['+indexes.join(', ')+'];\n'+
+                '\nfor(var i'+lv+' = 0; i'+lv+' < k'+lv+'.length; i'+lv+'++){\n'+
+                    'if(true){\n'+ //TODO
+                      'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
+                      (isLast?(
+                      'matches.push({' +
+                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                        'name: k'+lv+'[i'+lv+'],'+
+                        'value: $' + lv +
+                      '});\n'
+                      ):(
+                      'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
+                      ))
+        },
+        (input, ctx) => {
+          return input +
+                  '\n}\n'+
+                '\n}\n'
+        }
+      ]
+    }else if(/^\?\(.*\)$/.test(expr)){
+      return [
+        (input, ctx) => {
+          return input +
+                '\nfor(var i'+lv+' = 0; i'+lv+' < $' + (lv - 1) + '.length; i'+lv+'++){\n' +
+                    'if(' +
+                      expr.substring(1).replace(/@/g,'$'+(lv - 1)+'[i'+lv+']') +
+                    '){\n'+
+                      'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
+                      (isLast?(
+                      'matches.push({' +
+                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                        'name: i'+lv+','+
+                        'value: $' + lv +
+                      '});\n'
+                      ):(
+                      'var pwd' + lv + ' = i' + lv +';\n'
+                      ))
+        },
+        (input, ctx) => {
+          return input +
+                  '\n}\n'+
+                '\n}\n'
+        }
+      ]
+    }else if(/^\(.*\)$/.test(expr)){
+      return [
+        (input, ctx) => {
+          return input +
+                'var k'+lv+ ' = ' + expr.replace(/@/g,'$' + (lv - 1)) + ';\n' +
+                'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' +
+                (isLast?(
+                'matches.push({' +
+                  'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                  'name: k'+lv+',' +
+                  'value: $' + lv +
+                '});\n'
+                ):(
+                'var pwd' + lv + ' = k' + lv +';\n'
+                ))
+        }
+      ]
+    }else if(/^\[.*\]$/.test(expr)){
+      return [
+        (input, ctx) => {
+          var key = expr.substring(1, expr.length - 1)
+          return input +
+                'var k'+lv+' = ' + key + ';\n' +
+                'var $' + lv + ' = $' + (lv - 1) + expr +';\n' +
+                (isLast?(
+                'matches.push({' +
+                  'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'], ' +
+                  'name: k'+lv+', ' +
+                  'value: $' + lv +
+                '});\n'
+                ):(
+                'var pwd' + lv + ' = k' + lv +';\n'
+                ))
+        }
+      ]
+    }else{
+      throw new Error('unexpected expression: '+expr+'')
+    }
   }
-  toSetter(){
-
+  createMatcher(){
+    let lastIndex = this.exprArray.length - 1
+    let processors = this.exprArray.map((expr, i) => {
+      if(i === 0){
+        return [
+          (input, ctx) => {
+            return input +
+                  'var matches = [], $0 = $, pwd0 = "$";\n'
+          },
+          (input, ctx) => {
+            return input +
+                  '\nreturn matches;'
+          }
+        ]
+      }else{
+        return this._parseExpr(expr, i, i === lastIndex)
+      }
+    })
+    // console.log(stackProcess("", processors))
+    return new Function('$', 'args', stackProcess("", processors))
   }
 }
 export const lexers = [
   [
     (input, ctx) => { // braces
       var paramExprs = ctx.paramExprs = []
-      return input.replace(/\{([^\{]*)\}/g, ($0, $1) => '#' + (paramExprs.push($1) - 1))
+      return input.replace(/\{([^\{]*)\}/g, ($0, $1) => '#{' + (paramExprs.push($1) - 1) +'}')
     },
     (input, ctx) => {
       var {paramExprs} = ctx
-      return input.map((p) => p.replace(/^#(\d+)$/,($0, $1) => '["{' + paramExprs[$1] + '}"]')
-                              .replace(/#(\d+)/g, ($0, $1) => '{' + paramExprs[$1] + '}'))
+      return input.map((p) => p.replace(/^#\{(\d+)\}$/,($0, $1) => '[{' + paramExprs[$1] + '}]')
+                              //FIXME .replace(/(?=\w+)#\{(\d+)\}(?=\w+)/g,($0, $1) => '"+{' + paramExprs[$1] + '}+"')
+                              .replace(/#\{(\d+)\}/g, ($0, $1) => '{' + paramExprs[$1] + '}'))
     }
   ],
   [

@@ -66,7 +66,7 @@ export const assign = nativeAssign || function(target, ...sources){
   return target
 }
 
-export const shallowClone = function (obj){
+export const clone = function (obj){
   if(!obj) return obj
   if(isArray(obj)){
     return obj.slice()
@@ -75,16 +75,20 @@ export const shallowClone = function (obj){
   }
 }
 
-export const findIndex = function (arr, predicate, context = null){
-  var index
-  for(index = 0;index < arr.length;index++){
-    if(predicate.call(context, arr[index], index)) return index
+export const range = function range(start, stop, step){
+  if (stop == null) {
+    stop = start || 0;
+    start = 0;
   }
-  return -1
-}
+  step = step || 1;
 
-export const compose = function compose(...fns){
-  //TODO
+  var length = Math.max(Math.ceil((stop - start) / step), 0);
+  var range = Array(length);
+
+  for (var idx = 0; idx < length; idx++, start += step) {
+    range[idx] = start;
+  }
+  return range;
 }
 
 export function stackProcess(expr, fns, context = {}){
