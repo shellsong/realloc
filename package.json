@@ -6,7 +6,8 @@
   "scripts": {
     "build": "webpack --config ./config/webpack.dev.js",
     "test": "JASMINE_CONFIG_PATH=test/support/jasmine.json jasmine",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "postversion":"npm publish"
   },
   "repository": {
     "type": "git",
