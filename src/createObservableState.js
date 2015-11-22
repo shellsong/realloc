@@ -21,11 +21,12 @@ export default function createObservableState(initialState = {}, options = {}){
   }
   let triggerFlag = false
   const createAction = actionCreatorFactory(currentState, broadcastMap, (nextState) => {
+    var prevState = currentState.$
     currentState.$ = nextState
     if(triggerFlag === false){
       triggerFlag = true
       setTimeout(() => {
-        subscribers.forEach((cb) => cb(currentState.$))
+        subscribers.forEach((cb) => cb(nextState, prevState))
         triggerFlag = false
       }, 1)
     }
