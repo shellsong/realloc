@@ -19705,7 +19705,9 @@
 	    var _this = this;
 
 	    this._unsubscribe = _store.subscribe(function (state) {
-	      _this.setState(state);
+	      _this.setState(state, function () {
+	        return console.log(_store.getState());
+	      });
 	    });
 	  };
 
@@ -20079,8 +20081,7 @@
 						}
 					}
 					var triggerFlag = false;
-					var createAction = _actionCreatorFactory2['default'](currentState, broadcastMap, function (nextState) {
-						currentState.$ = nextState;
+					var createAction = _actionCreatorFactory2['default'](currentState, broadcastMap, function () {
 						if (triggerFlag === false) {
 							triggerFlag = true;
 							setTimeout(function () {
@@ -20219,7 +20220,7 @@
 						var processors = this.exprArray.map(function (expr, i) {
 							if (i === 0) {
 								return [function (input, ctx) {
-									return input + 'var matches = [], $0 = $, pwd0 = "$";\n';
+									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [], ' + 'name: pwd0, ' + 'value: $0' + '});\n' : '');
 								}, function (input, ctx) {
 									return input + '\nreturn matches;';
 								}];
@@ -20474,22 +20475,15 @@
 							});
 							var execResults = matcher(stateParent.$, payloads).map(function (result) {
 								return fn.apply(null, payloads.concat(matchDeps).concat([result.value, function (newValue) {
-									var $ = _utils.clone(stateParent.$),
-									    newCur = $,
-									    oldCur = stateParent.$,
-									    pwd;
-									if (result.pwd[0] === '$') {
-										pwd = result.pwd.slice(1);
-									} else {
-										pwd = result.pwd;
-									}
-									pwd.forEach(function (key) {
+									var newCur = stateParent,
+									    oldCur = stateParent;
+									result.pwd.forEach(function (key) {
 										newCur[key] = _utils.clone(oldCur[key]);
 										newCur = newCur[key];
 										oldCur = oldCur[key];
 									});
 									newCur[result.name] = newValue;
-									collect($);
+									collect(stateParent.$);
 								}, result]));
 							});
 							castFns.forEach(function (fn) {

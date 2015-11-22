@@ -30,9 +30,33 @@ describe('create compiler', () => {
       "bicycle": {
         "color": "red",
         "price": 19.95
+      },
+      "tree":{
+        "nodes":[{
+          nodes:[{
+            id:2
+          },{
+            id:3
+          }],
+          id:1
+        },{
+          id:4
+        }],
+        id:0
       }
     }
   }
+  it('$', () => {
+    var compiler = new Compiler('$')
+    var fn = compiler.createMatcher()
+    var result = fn({a:1}, [])
+    expect(result.length).toBe(1)
+    expect(result[0]).toEqual({
+      pwd:['$'],
+      name:null,
+      value:{a:1}
+    })
+  })
   it('only key with args', () => {
     var compiler = new Compiler('$.store.{key}.{[0].a}')
     var args = [{
@@ -123,6 +147,11 @@ describe('create compiler', () => {
     expect(result.map((r) => r.value)).toEqual([8.95, 12.99, 8.99, 22.99])
   })
   it('recursive descent', () => {
-
+    var compiler = new Compiler('$.store.tree..nodes[?(@.id === 1)].id')
+    var fn = compiler.createMatcher()
+    // console.log(fn.toString())
+    var result = fn(source)
+    expect(result.map((r) => r.value)).toEqual([1])
   })
+
 })

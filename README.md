@@ -66,9 +66,5 @@ class TodoApp extends Component {
 ```
 ## Todo List
 
-* Accessor By JSONPath
-* ObservableStore
-* actionCreatorFactory
-*
-* watch
+* unit tests
 * Examples &amp; Documents

@@ -24,22 +24,21 @@ export default function actionCreatorFactory(stateParent, broadcastMap, collect)
             [
               result.value,
               (newValue) => {
-                var $ = clone(stateParent.$)
-                  , newCur = $
+                var newCur = stateParent.$
                   , oldCur = stateParent.$
-                  , pwd
-                if(result.pwd[0] === '$'){
-                  pwd = result.pwd.slice(1)
-                }else{
-                  pwd = result.pwd
-                }
-                pwd.forEach((key) => {
-                  newCur[key] = clone(oldCur[key])
-                  newCur = newCur[key]
-                  oldCur = oldCur[key]
+                result.pwd.slice(1).forEach((key) => {
+                  if(key !== null){
+                    newCur[key] = clone(oldCur[key])
+                    newCur = newCur[key]
+                    oldCur = oldCur[key]
+                  }
                 })
-                newCur[result.name] = newValue
-                collect($)
+                if(result.name !== null){
+                  newCur[result.name] = newValue
+                  collect(stateParent.$)
+                }else{
+                  collect(newValue)
+                }
 
               },
               result

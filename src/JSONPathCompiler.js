@@ -11,12 +11,77 @@ export class Compiler {
       })
     })
   }
+  createMatcher(){
+    let lastIndex = this.exprArray.length - 1
+    let processors = stackProcess("", this.exprArray.map((expr, i) => {
+      if(i === 0){
+        return [
+          (input, ctx) => {
+            return input +
+                  'var matches = [], $0 = $, pwd0 = "$";\n' +
+                  (i === lastIndex?(
+                  'matches.push({' +
+                    'pwd: [pwd0], ' +
+                    'name: null, ' +
+                    'value: $0' +
+                  '});\n'
+                  ):'')
+          },
+          (input, ctx) => {
+            return input +
+                  '\nreturn matches;'
+          }
+        ]
+      }else{
+        return this._parseExpr(expr, i, i === lastIndex)
+      }
+    }))
+    // try{
+    //   new Function('$', 'args', processors)
+    // }catch(e){
+    //   throw new Error(e + '\n' + processors)
+    // }
+    return new Function('$', 'args', processors)
+
+
+  }
   _parseExpr(expr, lv, isLast){
     if('..' === expr){
       return [
         (input,ctx) => {
-          // TODO recursive
-          return input + ''
+          return input +
+          '\n((function(){\n' +
+              'var stop = false;var breakFn = function(){stop = true};\n' +
+            '\nreturn function recurfn'+lv+'(visit, rootCur, pwd, key){\n' +
+                'pwd = pwd || [];\n' +
+                'key = key || null;\n' +
+                'visit(rootCur, key, pwd, breakFn);\n' +
+                'newPwd = key !== null ? pwd.concat(key) : pwd' +
+              '\nif(stop === false && typeof rootCur === "object"){\n' +
+                '\nfor(var i in rootCur){\n' +
+                  '\nif(rootCur.hasOwnProperty(i) && typeof rootCur[i] === "object" && stop === false){\n' +
+                    'recurfn'+lv+'(visit, rootCur[i], newPwd, i);\n' +
+                  '}\n' +
+                '}\n' +
+              '}\n' +
+            '}\n' +
+          '}())(function(recur, key, pwd, breakFn){\n' +
+            'var $'+lv+' = recur;\n' +
+            (isLast?(
+            'matches.push({' +
+              'pwd: ['+range(0, lv - 1).map((i) => 'pwd' + i).join(', ')+'].concat(pwd),' +
+              'name: key,'+
+              'value: $' + lv +
+            '});\n'
+            ):(
+            '\nif($'+lv+' !== (void 0)){'+
+            'var pwd' + lv + ' = key;\n'
+            ))
+        },
+        (input, ctx) => {
+          return input +
+                    (isLast?'':'\n}\n')+
+                  '\n},$'+(lv - 1)+'))\n'
         }
       ]
     }else if('*' === expr){
@@ -33,11 +98,13 @@ export class Compiler {
                         'value: $' + lv +
                       '});\n'
                       ):(
+                      '\nif($'+lv+' !== (void 0)){'+
                       'var pwd' + lv + ' = i'+lv+';\n'
                       ))
         },
         (input, ctx) => {
           return input +
+                  (isLast?'':'\n}\n')+
                   '\n}\n'+
                 '\n}\n'
         }
@@ -56,11 +123,13 @@ export class Compiler {
                       'value: $' + lv +
                     '});\n'
                     ):(
+                    '\nif($'+lv+' !== (void 0)){'+
                     'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
                     ))
         },
         (input, ctx) => {
           return input +
+                (isLast?'':'\n}\n')+
                 '\n}\n'
         }
       ]
@@ -79,11 +148,13 @@ export class Compiler {
                       'value: $' + lv +
                     '});\n'
                     ):(
+                    '\nif($'+lv+' !== (void 0)){'+
                     'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
                     ))
         },
         (input, ctx) => {
           return input +
+                (isLast?'':'\n}\n')+
                 '\n}\n'
         }
       ]
@@ -103,11 +174,13 @@ export class Compiler {
                         'value: $' + lv +
                       '});\n'
                       ):(
+                      '\nif($'+lv+' !== (void 0)){'+
                       'var pwd' + lv + ' = i' + lv +';\n'
                       ))
         },
         (input, ctx) => {
           return input +
+                  (isLast?'':'\n}\n')+
                   '\n}\n'+
                 '\n}\n'
         }
@@ -125,8 +198,14 @@ export class Compiler {
                   'value: $' + lv +
                 '});\n'
                 ):(
+                '\nif($'+lv+' !== (void 0)){'+
                 'var pwd' + lv + ' = k' + lv +';\n'
                 ))
+        },
+        (input, ctx) => {
+          return input +
+                (isLast?'':'\n}\n')+
+                ''
         }
       ]
     }else if(/^\[.*\]$/.test(expr)){
@@ -143,34 +222,19 @@ export class Compiler {
                   'value: $' + lv +
                 '});\n'
                 ):(
+                  '\nif($'+lv+' !== (void 0)){'+
                 'var pwd' + lv + ' = k' + lv +';\n'
                 ))
+        },
+        (input, ctx) => {
+          return input +
+                (isLast?'':'\n}\n')+
+                ''
         }
       ]
     }else{
       throw new Error('unexpected expression: '+expr+'')
     }
-  }
-  createMatcher(){
-    let lastIndex = this.exprArray.length - 1
-    let processors = this.exprArray.map((expr, i) => {
-      if(i === 0){
-        return [
-          (input, ctx) => {
-            return input +
-                  'var matches = [], $0 = $, pwd0 = "$";\n'
-          },
-          (input, ctx) => {
-            return input +
-                  '\nreturn matches;'
-          }
-        ]
-      }else{
-        return this._parseExpr(expr, i, i === lastIndex)
-      }
-    })
-    // console.log(stackProcess("", processors))
-    return new Function('$', 'args', stackProcess("", processors))
   }
 }
 export const lexers = [
