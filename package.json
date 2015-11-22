@@ -1,13 +1,13 @@
 {
   "name": "realloc",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Observable, Immutable State Manager for Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
     "build": "webpack --config ./config/webpack.dev.js",
     "test": "JASMINE_CONFIG_PATH=test/support/jasmine.json jasmine",
     "lint": "eslint src",
-    "postversion":"npm publish"
+    "postversion": "npm publish"
   },
   "repository": {
     "type": "git",
