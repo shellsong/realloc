@@ -1,4 +1,4 @@
-const { stackProcess } = require('../../src/utils')
+import { stackProcess } from '../../src/utils'
 
 describe('test stack process', () => {
   it('call stack', () => {

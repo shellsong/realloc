@@ -41,16 +41,6 @@ export const has = function (obj, key){
   return obj != null && hasOwnProperty.call(obj, key)
 }
 
-export const pairs = function (obj){
-  var arr = []
-  for(var k in obj){
-    if(has(obj, k)){
-      arr.push([k, obj[k]])
-    }
-  }
-  return arr
-}
-
 export const keys = nativeKeys || function (obj){
   var keys = []
   for (var key in obj) if (has(obj, key)) keys.push(key)
