@@ -1,4 +1,4 @@
-const { Compiler, lexers, parseJSONPath } = require('../../src/JSONPathCompiler')
+import Compiler, { parseJSONPath, jsonPath } from '../../src/JSONPathCompiler'
 describe('parse json path', () => {
   it('$', () => {
     expect(parseJSONPath('$')).toEqual(['$'])
@@ -46,52 +46,53 @@ describe('parse json path', () => {
     expect(parseJSONPath('$.store.{book}.{[0].a}')).toEqual(['$','["store"]','[{book}]','[{[0].a}]'])
   })
 })
-describe('create compiler', () => {
-  var source = {
-    store:{
-      "book": [
-        { "category": "reference",
-          "author": "Nigel Rees",
-          "title": "Sayings of the Century",
-          "price": 8.95
-        },
-        { "category": "fiction",
-          "author": "Evelyn Waugh",
-          "title": "Sword of Honour",
-          "price": 12.99
-        },
-        { "category": "fiction",
-          "author": "Herman Melville",
-          "title": "Moby Dick",
-          "isbn": "0-553-21311-3",
-          "price": 8.99
-        },
-        { "category": "fiction",
-          "author": "J. R. R. Tolkien",
-          "title": "The Lord of the Rings",
-          "isbn": "0-395-19395-8",
-          "price": 22.99
-        }
-      ],
-      "bicycle": {
-        "color": "red",
-        "price": 19.95
+var source = {
+  store:{
+    "book": [
+      { "category": "reference",
+        "author": "Nigel Rees",
+        "title": "Sayings of the Century",
+        "price": 8.95
       },
-      "tree":{
-        "nodes":[{
-          nodes:[{
-            id:2
-          },{
-            id:3
-          }],
-          id:1
-        },{
-          id:4
-        }],
-        id:0
+      { "category": "fiction",
+        "author": "Evelyn Waugh",
+        "title": "Sword of Honour",
+        "price": 12.99
+      },
+      { "category": "fiction",
+        "author": "Herman Melville",
+        "title": "Moby Dick",
+        "isbn": "0-553-21311-3",
+        "price": 8.99
+      },
+      { "category": "fiction",
+        "author": "J. R. R. Tolkien",
+        "title": "The Lord of the Rings",
+        "isbn": "0-395-19395-8",
+        "price": 22.99
       }
+    ],
+    "bicycle": {
+      "color": "red",
+      "price": 19.95
+    },
+    "tree":{
+      "nodes":[{
+        nodes:[{
+          id:2
+        },{
+          id:3
+        }],
+        id:1
+      },{
+        id:4
+      }],
+      id:0
     }
   }
+}
+describe('create compiler', () => {
+
   it('$', () => {
     var compiler = new Compiler('$')
     var fn = compiler.createMatcher()
@@ -199,5 +200,10 @@ describe('create compiler', () => {
     var result = fn(source)
     expect(result.map((r) => r.value)).toEqual([1])
   })
+})
 
+describe('json path function impl', () => {
+  it('should return matches', () => {
+    expect(jsonPath(source,'$.store.book.*.price')).toEqual([8.95, 12.99, 8.99, 22.99])
+  })
 })

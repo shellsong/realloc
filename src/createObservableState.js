@@ -1,60 +1,42 @@
-import { parseJSONPath } from './JSONPathCompiler'
 import actionCreatorFactory from './actionCreatorFactory'
+import Compiler from './JSONPathCompiler'
 export default function createObservableState(initialState = {}, options = {}){
   let currentState = {
     $:initialState
   }
   let subscribers = []
-  let broadcastMap = {}
   function subscribe(callback){
     subscribers = subscribers.concat(callback)
     return () => {
       subscribers = subscribers.filter((cb) => cb !== callback)
     }
   }
-  function getState(path){
-    if(!path){
-      return currentState.$
-    }else{
-      return ;
-    }
+  function getState(){
+    return currentState.$
+  }
+  function createGetter(path){
+    const compiler = new Compiler(path)
+    const matcher = compiler.createMatcher()
+    return (...args) => {
+      return matcher(currentState.$, args).map((v) => v.value)
+    };
   }
   let triggerFlag = false
-  const createAction = actionCreatorFactory(currentState, broadcastMap, (nextState) => {
-    var prevState = currentState.$
+  const createAction = actionCreatorFactory(() => currentState.$, (nextState, keyPath) => {
+    let prevState = currentState.$
     currentState.$ = nextState
     if(triggerFlag === false){
       triggerFlag = true
       setTimeout(() => {
         subscribers.forEach((cb) => cb(nextState, prevState))
         triggerFlag = false
-      }, 1)
+      }, 0)
     }
   })
-  function watch(listenPaths, keyPath, fn, opts){
-    const parsedListenPaths = listenPaths.map((listenPath) => {
-      return parseJSONPath(listenPath).join('')
-    })
-    const action = createAction(keyPath, fn, opts)
-    parsedListenPaths.forEach((parsedListenPath) => {
-      if(!broadcastMap[parsedListenPath]){
-        broadcastMap[parsedListenPath] = [action]
-      }else{
-        broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].concat([action])
-      }
-    })
-    return () => {
-      parsedListenPaths.forEach((parsedListenPath) => {
-        broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].filter((a) => {
-          return a !== action
-        })
-      })
-    }
-  }
   return {
     getState,
+    createGetter,
     subscribe,
-    createAction,
-    watch
+    createAction
   }
 }

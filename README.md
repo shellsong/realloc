@@ -22,27 +22,28 @@ export default const store = createObservableStore({
 ```javascript
 // actions.js
 import { createAction } from './store'
-export const addTodo = createAction('$.todos', (text,  todos, resolve) => {
-  resolve(todos.concat({title:text, active:true }))
-})
-export const toggleTodoActive = createAction('$.todos.{id}.active', (payload, oldStateOfTodo, resolve) => {
-  resolve(!oldStateOfTodo)
-})
-export const updateTodoText = createAction('$.todos.{id}.text', (payload, todo, resolve) => {
+export const createTodo = createAction('$.todos[(@.length)]', (text,  _, resolve) => {
   resolve({
-    id:todo.id,
-    text:payload.text,
-    active:todo.active
+    text:text,
+    complete:false
   })
 })
+export const toggleTodoActive = createAction('$.todos[?(@.id === {id})].complete', (payload, currentCompleteState, resolve) => {
+  resolve(!complete)
+})
+export const updateTodoText = createAction('$.todos[?(@.id === {id})].text', (payload, prevText, resolve) => {
+  resolve(payload.text)
+})
 export const removeTodo = createAction('$.todos', (payload, todos, () => {
-  resolve(todos.filter((t) => t !== payload.todo )))
+  resolve(todos.filter((todo) => todo !== payload))
 })
 ```
 ```javascript
 // TodoApp.js
 import React, { Component } from 'react'
 import { subscribe, getState } from './store'
+import { createTodo } from 'actions'
+const ENTER_KEY_CODE = 13;
 class TodoApp extends Component {
   constructor(props, context){
     super(props, context)
@@ -56,7 +57,11 @@ class TodoApp extends Component {
   }
   render(){
     return (
-      ...
+      <input onKeyDown={(ev) => {
+        if (ev.keyCode === ENTER_KEY_CODE) {
+          createTodo(ev.target.value)
+        }
+      }}/>
     )
   }
 
