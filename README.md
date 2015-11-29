@@ -3,7 +3,7 @@ Realloc
 [![build status](https://img.shields.io/travis/foomorrow/realloc.svg?style=flat-square)](https://travis-ci.org/foomorrow/realloc)
 [![npm version](https://img.shields.io/npm/v/realloc.svg?style=flat-square)](https://www.npmjs.com/package/realloc)
 [![Coverage Status](https://img.shields.io/coveralls/foomorrow/realloc.svg)](https://coveralls.io/r/foomorrow/realloc?branch=master)
-[![NPM](https://nodei.co/npm/realloc.png?downloads=true)](https://nodei.co/npm/realloc/)
+[![NPM](https://nodei.co/npm/realloc.png)](https://nodei.co/npm/realloc/)
 ## Install
 ```sh
 npm i -S realloc
