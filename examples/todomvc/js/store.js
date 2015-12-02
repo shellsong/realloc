@@ -1,13 +1,22 @@
 import { createObservableState } from 'realloc'
-const store = createObservableState({
+
+
+let initialState = {
   todos:[],
-  areAllComplete:true
-})
-store.watch([
-  '$.todos'
-],'$.areAllComplete', (todos, _, res) => {
-  res(todos.every((todo) => todo.complete))
-},{
-  deps:['$.todos']
-})
+  visibility:'all'
+}
+// var localStorage
+// if(localStorage){
+//   let cache = localStorage.getItem('todoapp')
+//   if(cache){
+//     initialState = JSON.parse(cache)
+//   }
+// }
+
+const store = createObservableState(initialState)
 export default store
+
+store.subscribe((a) => {
+  // console.log(a.todos.map((a) => a.completed))
+  // localStorage.setItem('todoapp', JSON.stringify(a))
+})

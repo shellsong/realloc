@@ -1,4 +1,4 @@
-import Compiler, { parseJSONPath, jsonPath } from '../../src/JSONPathCompiler'
+import Compiler, { parseJSONPath, JSONPath } from '../../src/JSONPathCompiler'
 describe('parse json path', () => {
   it('$', () => {
     expect(parseJSONPath('$')).toEqual(['$'])
@@ -203,7 +203,15 @@ describe('create compiler', () => {
 })
 
 describe('json path function impl', () => {
-  it('should return matches', () => {
-    expect(jsonPath(source,'$.store.book.*.price')).toEqual([8.95, 12.99, 8.99, 22.99])
+  it('should return match values', () => {
+    expect(JSONPath(source,'$.store.book.*.price')).toEqual([8.95, 12.99, 8.99, 22.99])
+  })
+  it('should return match paths', () => {
+    expect(JSONPath(source,'$.store.book.*.price',{resultType:'path'})).toEqual([
+      ['$', 'store', 'book', 0, 'price'],
+      ['$', 'store', 'book', 1, 'price'],
+      ['$', 'store', 'book', 2, 'price'],
+      ['$', 'store', 'book', 3, 'price']
+    ])
   })
 })

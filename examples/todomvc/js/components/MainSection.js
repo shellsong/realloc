@@ -2,7 +2,13 @@
 import React, {Component, PropTypes} from 'react'
 import TodoItem from './TodoItem'
 
-import toggleCompleteAll from '../actions/toggleCompleteAll'
+import {toggleAllCompleted} from '../actions'
+
+const filters = {
+  all:() => true,
+  active:(todo) => !todo.completed,
+  completed:(todo) => todo.completed
+}
 
 export default class MainSection extends Component {
   constructor(props, context){
@@ -10,29 +16,32 @@ export default class MainSection extends Component {
     this._onToggleCompleteAll = this._onToggleCompleteAll.bind(this)
   }
   _onToggleCompleteAll(){
-    toggleCompleteAll()
+    toggleAllCompleted()
   }
   render(){
-    let {allTodos} = this.props;
+    let {allTodos, visibility} = this.props;
     if (allTodos.length < 1) {
       return null;
     }
-
-    let todos = allTodos.map((todo) => {
-      return (
-        <TodoItem key={todo.id} todo={todo} />
-      )
-    });
+    let predict = filters[visibility]
     return (
-      <section id="main">
+      <section className="main">
         <input
-          id="toggle-all"
+          className="toggle-all"
           type="checkbox"
           onChange={this._onToggleCompleteAll}
-          defaultChecked={this.props.areAllComplete ? true : false}
+          defaultChecked={allTodos.every((t) => t.completed)}
         />
         <label htmlFor="toggle-all">Mark all as complete</label>
-        <ul id="todo-list">{todos}</ul>
+        <ul className="todo-list">
+          {
+            allTodos.filter(predict).map((todo) => {
+              return (
+                <TodoItem key={todo.id} todo={todo} />
+              )
+            })
+          }
+        </ul>
       </section>
     )
   }

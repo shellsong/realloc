@@ -1,27 +1,17 @@
-
-import React, {Component, PropTypes} from 'react'
+import React, { Component, PropTypes } from 'react'
 import TodoTextInput from './TodoTextInput'
-import createTodo from '../actions/createTodo'
-
+import { createTodo } from '../actions'
+const ENTER_KEY_CODE = 13;
 export default class Header extends Component {
-  constructor(props, context){
-    super(props, context)
-    this._onSave = this._onSave.bind(this)
-  }
-  _onSave(text){
-    if(text.trim()){
-      createTodo({text:text})
-    }
-  }
   render(){
     return (
-      <header id="header">
+      <header className="header">
         <h1>todos</h1>
         <TodoTextInput
-          id="new-todo"
+          className="new-todo"
           placeholder="What needs to be done?"
-          onSave={this._onSave}
-        />
+          onSave={ createTodo }
+          />
       </header>
     )
   }

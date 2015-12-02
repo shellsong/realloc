@@ -17,15 +17,18 @@ export default class TodoApp extends Component{
     this._unsubscribe()
   }
   render(){
-    let {todos, areAllComplete} = this.state
+    let {newTodo, todos, visibility} = this.state
     return (
       <div>
-        <Header />
+        <Header value={newTodo} />
         <MainSection
           allTodos={todos}
-          areAllComplete={areAllComplete}
+          visibility={visibility}
         />
-        <Footer allTodos={todos} />
+        <Footer
+          allTodos={todos}
+          visibility={visibility}
+        />
       </div>
     )
   }

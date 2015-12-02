@@ -1,13 +1,20 @@
 import { stackProcess, range} from './utils'
 import lexers from './lexers'
-function jsonPath(source, expr){
-  return ((new Compiler(expr)).createMatcher())(source).map((v) => v.value)
+function JSONPath(source, expr,options = {}){
+  let resultType = (options.resultType||'value').toUpperCase()
+  let getResult = (v) => v;
+  if(resultType === 'VALUE'){
+    getResult = (v) => v.value
+  }else if(resultType === 'PATH'){
+    getResult = (v) => v.pwd.concat([v.name]).filter((v) => !!v)
+  }
+  return ((new Compiler(expr)).createMatcher())(source).map(getResult)
 }
 function parseJSONPath(expr){
   return stackProcess(expr, lexers)
 }
 export default class Compiler {
-  static jsonPath = jsonPath
+  static JSONPath = JSONPath
   static parseJSONPath = parseJSONPath
   constructor(exprs, notNormalized){
     if(notNormalized !== false){
@@ -44,12 +51,11 @@ export default class Compiler {
         return this._parseExpr(expr, i, i === lastIndex)
       }
     }))
-    // try{
-    //   return new Function('$', 'args', processors)
-    // }catch(e){
-    //   throw new Error(e + '\n' + processors)
-    // }
-    return new Function('$', 'args', processors)
+    try{
+      return new Function('$', 'args', processors)
+    }catch(e){
+      throw new Error(e + '\nfunction matcher($, args){\n' + processors + '\n}')
+    }
   }
   _parseExpr(expr, lv, isLast){
     if('..' === expr){

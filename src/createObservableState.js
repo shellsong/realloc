@@ -28,7 +28,7 @@ export default function createObservableState(initialState = {}, options = {}){
     if(triggerFlag === false){
       triggerFlag = true
       setTimeout(() => {
-        subscribers.forEach((cb) => cb(nextState, prevState))
+        subscribers.forEach((cb) => cb(currentState.$, prevState))
         triggerFlag = false
       }, 0)
     }

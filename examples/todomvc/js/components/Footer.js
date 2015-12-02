@@ -1,6 +1,7 @@
 
 import React, {Component, PropTypes} from 'react'
-import destroyCompleted from '../actions/destroyCompleted'
+import cx from 'classnames'
+import {destroyCompleted, switchFilter} from '../actions'
 
 export default class Footer extends Component {
   constructor(props, context){
@@ -11,32 +12,37 @@ export default class Footer extends Component {
     destroyCompleted()
   }
   render(){
-    let {allTodos} = this.props
+    let {allTodos, visibility} = this.props
     let total = allTodos.length
 
     if (total === 0) {
       return null
     }
-    let completed = allTodos.filter((todo) => todo.complete).length
+    let completed = allTodos.filter((todo) => todo.completed).length
     let itemsLeft = total - completed
-    let itemsLeftPhrase = (itemsLeft === 1 ? ' item ' : ' items ')
-    itemsLeftPhrase += 'left'
-    let clearCompletedButton = !completed ? null :(
-      <button
-        id="clear-completed"
-        onClick={this._onClearCompletedClick}>
-        Clear completed ({completed})
-      </button>
-    )
+    let itemsLeftPhrase = (itemsLeft === 1 ? ' item ' : ' items ') + 'left'
     return (
-      <footer id="footer">
-        <span id="todo-count">
+      <footer className="footer">
+        <span className="todo-count">
           <strong>
             {itemsLeft}
           </strong>
           {itemsLeftPhrase}
         </span>
-        {clearCompletedButton}
+        <ul className="filters">
+					<li><a href="#/all" className={cx({selected:visibility === 'all'})} onClick={(e) => switchFilter('all')}>All</a></li>
+					<li><a href="#/active" className={cx({selected:visibility === 'active'})} onClick={(e) => switchFilter('active')}>Active</a></li>
+					<li><a href="#/completed"  className={cx({selected:visibility === 'completed'})} onClick={(e) => switchFilter('completed')}>Completed</a></li>
+				</ul>
+        {
+          !completed ? null : (
+            <button
+              className="clear-completed"
+              onClick={this._onClearCompletedClick}>
+              Clear completed ({completed})
+            </button>
+          )
+        }
       </footer>
     )
   }

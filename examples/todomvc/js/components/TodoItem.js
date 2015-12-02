@@ -1,9 +1,8 @@
 import React, {Component, PropTypes} from 'react'
-import classNames from 'classnames'
+import cx from 'classnames'
 import TodoTextInput from './TodoTextInput'
-import updateTodo from '../actions/updateTodo'
-import toggleComplete from '../actions/toggleComplete'
-import destroy from '../actions/destroy'
+import {updateTodo, toggleTodo, destroyTodo} from '../actions'
+import {createGetter} from '../store'
 export default class TodoItem extends Component {
   constructor(props, context){
     super(props, context)
@@ -16,20 +15,17 @@ export default class TodoItem extends Component {
     this._onDestroyClick = this._onDestroyClick.bind(this)
   }
   _onSave(text){
-    updateTodo({
-      id:this.props.todo.id,
-      text:text
-    });
+    updateTodo(this.props.todo, text);
     this.setState({isEditing: false})
   }
   _onToggleComplete(){
-    toggleComplete(this.props.todo)
+    toggleTodo(this.props.todo)
   }
   _onDoubleClick(){
     this.setState({isEditing: true})
   }
   _onDestroyClick(){
-    destroy(this.props.todo)
+    destroyTodo(this.props.todo)
   }
   render(){
     let {todo} = this.props
@@ -41,11 +37,10 @@ export default class TodoItem extends Component {
         defaultValue={todo.text}
       />
     )
-
     return (
       <li
-        className={classNames({
-          'completed': todo.complete,
+        className={cx({
+          'completed': todo.completed,
           'editing': this.state.isEditing
         })}
         key={todo.id}>
@@ -53,7 +48,7 @@ export default class TodoItem extends Component {
           <input
             className="toggle"
             type="checkbox"
-            checked={todo.complete}
+            checked={todo.completed}
             onChange={this._onToggleComplete}
           />
           <label onDoubleClick={this._onDoubleClick}>

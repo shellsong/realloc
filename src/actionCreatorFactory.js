@@ -9,6 +9,8 @@ export default function actionCreatorFactory(stateGetter, collect){
     return (...payloads) => {
       let $ = stateGetter()
       return matcher($, payloads).map((result) => {
+        //TODO collect之后应该clone新的state，循环使用，减少collect
+        let $ = stateGetter()
         let pwd = result.pwd.slice(1)
         const setter = (newValue) => {
           let oldCur = $

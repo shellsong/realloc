@@ -4,6 +4,7 @@
   "description": "",
   "main": "js/main.js",
   "scripts": {
+    "prestart":"npm install",
     "start": "webpack --config webpack.dev.js",
     "test": "JASMINE_CONFIG_PATH=test/support/jasmine.json jasmine"
   },
@@ -19,6 +20,8 @@
     "classnames": "^2.1.5",
     "react": "^0.14.0",
     "react-dom": "^0.14.0",
-    "realloc": "file:../.."
+    "realloc": "file:../..",
+    "todomvc-app-css": "^2.0.3",
+    "todomvc-common": "^1.0.2"
   }
 }

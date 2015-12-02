@@ -56,6 +56,16 @@ export const assign = nativeAssign || function(target, ...sources){
   return target
 }
 
+export const compose = function(...fns){
+  if(fns.length === 1 && isArray(fns[0])){
+    fns = fns[0]
+  }
+  let len = fns.length
+  return (...args) => {
+    return fns.map((fn) => fn.apply(null, args))[len - 1]
+  }
+}
+
 export const clone = function (obj){
   if(!obj) return obj
   if(isArray(obj)){

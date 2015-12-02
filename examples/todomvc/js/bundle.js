@@ -19685,7 +19685,7 @@
 
 	var _MainSection2 = _interopRequireDefault(_MainSection);
 
-	var _Footer = __webpack_require__(173);
+	var _Footer = __webpack_require__(169);
 
 	var _Footer2 = _interopRequireDefault(_Footer);
 
@@ -19705,9 +19705,7 @@
 	    var _this = this;
 
 	    this._unsubscribe = _store.subscribe(function (state) {
-	      _this.setState(state, function () {
-	        return console.log(_store.getState());
-	      });
+	      _this.setState(state);
 	    });
 	  };
 
@@ -19717,18 +19715,22 @@
 
 	  TodoApp.prototype.render = function render() {
 	    var _state = this.state;
+	    var newTodo = _state.newTodo;
 	    var todos = _state.todos;
-	    var areAllComplete = _state.areAllComplete;
+	    var visibility = _state.visibility;
 
 	    return _react2['default'].createElement(
 	      'div',
 	      null,
-	      _react2['default'].createElement(_Header2['default'], null),
+	      _react2['default'].createElement(_Header2['default'], { value: newTodo }),
 	      _react2['default'].createElement(_MainSection2['default'], {
 	        allTodos: todos,
-	        areAllComplete: areAllComplete
+	        visibility: visibility
 	      }),
-	      _react2['default'].createElement(_Footer2['default'], { allTodos: todos })
+	      _react2['default'].createElement(_Footer2['default'], {
+	        allTodos: todos,
+	        visibility: visibility
+	      })
 	    );
 	  };
 
@@ -19760,39 +19762,32 @@
 
 	var _TodoTextInput2 = _interopRequireDefault(_TodoTextInput);
 
-	var _actionsCreateTodo = __webpack_require__(163);
+	var _actions = __webpack_require__(163);
 
-	var _actionsCreateTodo2 = _interopRequireDefault(_actionsCreateTodo);
+	var ENTER_KEY_CODE = 13;
 
 	var Header = (function (_Component) {
 	  _inherits(Header, _Component);
 
-	  function Header(props, context) {
+	  function Header() {
 	    _classCallCheck(this, Header);
 
-	    _Component.call(this, props, context);
-	    this._onSave = this._onSave.bind(this);
+	    _Component.apply(this, arguments);
 	  }
-
-	  Header.prototype._onSave = function _onSave(text) {
-	    if (text.trim()) {
-	      _actionsCreateTodo2['default']({ text: text });
-	    }
-	  };
 
 	  Header.prototype.render = function render() {
 	    return _react2['default'].createElement(
 	      'header',
-	      { id: 'header' },
+	      { className: 'header' },
 	      _react2['default'].createElement(
 	        'h1',
 	        null,
 	        'todos'
 	      ),
 	      _react2['default'].createElement(_TodoTextInput2['default'], {
-	        id: 'new-todo',
+	        className: 'new-todo',
 	        placeholder: 'What needs to be done?',
-	        onSave: this._onSave
+	        onSave: _actions.createTodo
 	      })
 	    );
 	  };
@@ -19909,18 +19904,55 @@
 
 	var _store = __webpack_require__(164);
 
+	var createTodo = _store.createAction('$.todos[(@.length)]', function (text, _, res) {
+	  if (text === undefined) text = '';
+
+	  var value = text.trim();
+	  if (value) {
+	    res({
+	      id: getNewId(),
+	      text: value,
+	      completed: false
+	    });
+	  }
+	});
+	exports.createTodo = createTodo;
+	var toggleTodo = _store.createAction('$.todos[?(@ === {[0]})].completed', function (todo, currentComplete, res) {
+	  return res(!currentComplete);
+	});
+	exports.toggleTodo = toggleTodo;
+	var updateTodo = _store.createAction('$.todos[?(@ === {[0]})].text', function (todo, text, currentText, res) {
+	  return res(text);
+	});
+	exports.updateTodo = updateTodo;
+	var destroyTodo = _store.createAction('$.todos', function (todo, todos, res) {
+	  return res(todos.filter(function (t) {
+	    return todo !== t;
+	  }));
+	});
+	exports.destroyTodo = destroyTodo;
+	var destroyCompleted = _store.createAction('$.todos', function (todos, res) {
+	  return res(todos.filter(function (todo) {
+	    return !todo.completed;
+	  }));
+	});
+	exports.destroyCompleted = destroyCompleted;
+	var activeTodos = _store.createGetter('$.todos[?(!@.completed)]');
+	var toggleAllCompletedAction = _store.createAction('$.todos.*.completed', function (completed, _, res) {
+	  res(completed);
+	});
+	var toggleAllCompleted = function toggleAllCompleted() {
+	  toggleAllCompletedAction(activeTodos().length > 0);
+	};
+	exports.toggleAllCompleted = toggleAllCompleted;
+	var switchFilter = _store.createAction('$.visibility', function (newKey, oldKey, res) {
+	  return res(newKey);
+	});
+
+	exports.switchFilter = switchFilter;
 	function getNewId() {
 	  return (+new Date() + Math.floor(Math.random() * 999999)).toString(36);
 	}
-
-	exports['default'] = _store.createAction('$.todos[(@.length)]', function (payload, _, res) {
-	  res({
-	    id: getNewId(),
-	    text: payload.text,
-	    complete: false
-	  });
-	});
-	module.exports = exports['default'];
 
 /***/ },
 /* 164 */
@@ -19932,18 +19964,25 @@
 
 	var _realloc = __webpack_require__(165);
 
-	var store = _realloc.createObservableState({
+	var initialState = {
 	  todos: [],
-	  areAllComplete: true
-	});
-	store.watch(['$.todos'], '$.areAllComplete', function (todos, _, res) {
-	  res(todos.every(function (todo) {
-	    return todo.complete;
-	  }));
-	}, {
-	  deps: ['$.todos']
-	});
+	  visibility: 'all'
+	};
+	// var localStorage
+	// if(localStorage){
+	//   let cache = localStorage.getItem('todoapp')
+	//   if(cache){
+	//     initialState = JSON.parse(cache)
+	//   }
+	// }
+
+	var store = _realloc.createObservableState(initialState);
 	exports['default'] = store;
+
+	store.subscribe(function (a) {
+	  // console.log(a.todos.map((a) => a.completed))
+	  // localStorage.setItem('todoapp', JSON.stringify(a))
+	});
 	module.exports = exports['default'];
 
 /***/ },
@@ -20022,17 +20061,21 @@
 
 				var _createObservableState2 = _interopRequireDefault(_createObservableState);
 
-				var _actionCreatorFactory = __webpack_require__(5);
+				var _actionCreatorFactory = __webpack_require__(3);
 
 				var _actionCreatorFactory2 = _interopRequireDefault(_actionCreatorFactory);
 
-				var _JSONPathCompiler = __webpack_require__(3);
+				var _JSONPathCompiler = __webpack_require__(5);
+
+				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
+
+				var _utils = __webpack_require__(4);
 
 				exports['default'] = {
 					createObservableState: _createObservableState2['default'],
 					actionCreatorFactory: _actionCreatorFactory2['default'],
-					Compiler: _JSONPathCompiler.Compiler,
-					parseJSONPath: _JSONPathCompiler.parseJSONPath
+					Compiler: _JSONPathCompiler2['default'],
+					JSONPath: _JSONPathCompiler.JSONPath
 				};
 				module.exports = exports['default'];
 
@@ -20050,11 +20093,13 @@
 					return obj && obj.__esModule ? obj : { 'default': obj };
 				}
 
-				var _JSONPathCompiler = __webpack_require__(3);
-
-				var _actionCreatorFactory = __webpack_require__(5);
+				var _actionCreatorFactory = __webpack_require__(3);
 
 				var _actionCreatorFactory2 = _interopRequireDefault(_actionCreatorFactory);
+
+				var _JSONPathCompiler = __webpack_require__(5);
+
+				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
 
 				function createObservableState() {
 					var initialState = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
@@ -20064,7 +20109,6 @@
 						$: initialState
 					};
 					var subscribers = [];
-					var broadcastMap = {};
 					function subscribe(callback) {
 						subscribers = subscribers.concat(callback);
 						return function () {
@@ -20073,50 +20117,43 @@
 							});
 						};
 					}
-					function getState(path) {
-						if (!path) {
-							return currentState.$;
-						} else {
-							return;
-						}
+					function getState() {
+						return currentState.$;
+					}
+					function createGetter(path) {
+						var compiler = new _JSONPathCompiler2['default'](path);
+						var matcher = compiler.createMatcher();
+						return function () {
+							for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+								args[_key] = arguments[_key];
+							}
+
+							return matcher(currentState.$, args).map(function (v) {
+								return v.value;
+							});
+						};
 					}
 					var triggerFlag = false;
-					var createAction = _actionCreatorFactory2['default'](currentState, broadcastMap, function () {
+					var createAction = _actionCreatorFactory2['default'](function () {
+						return currentState.$;
+					}, function (nextState, keyPath) {
+						var prevState = currentState.$;
+						currentState.$ = nextState;
 						if (triggerFlag === false) {
 							triggerFlag = true;
 							setTimeout(function () {
 								subscribers.forEach(function (cb) {
-									return cb(currentState.$);
+									return cb(currentState.$, prevState);
 								});
 								triggerFlag = false;
-							}, 1);
+							}, 0);
 						}
 					});
-					function watch(listenPaths, keyPath, fn, opts) {
-						var parsedListenPaths = listenPaths.map(function (listenPath) {
-							return _JSONPathCompiler.parseJSONPath(listenPath).join('');
-						});
-						var action = createAction(keyPath, fn, opts);
-						parsedListenPaths.forEach(function (parsedListenPath) {
-							if (!broadcastMap[parsedListenPath]) {
-								broadcastMap[parsedListenPath] = [action];
-							} else {
-								broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].concat([action]);
-							}
-						});
-						return function () {
-							parsedListenPaths.forEach(function (parsedListenPath) {
-								broadcastMap[parsedListenPath] = broadcastMap[parsedListenPath].filter(function (a) {
-									return a !== action;
-								});
-							});
-						};
-					}
 					return {
 						getState: getState,
+						createGetter: createGetter,
 						subscribe: subscribe,
-						createAction: createAction,
-						watch: watch
+						createAction: createAction
 					};
 				}
 
@@ -20130,174 +20167,59 @@
 				'use strict';
 
 				exports.__esModule = true;
-				exports.parseJSONPath = parseJSONPath;
+				exports['default'] = actionCreatorFactory;
 
-				function _classCallCheck(instance, Constructor) {
-					if (!(instance instanceof Constructor)) {
-						throw new TypeError('Cannot call a class as a function');
-					}
+				function _interopRequireDefault(obj) {
+					return obj && obj.__esModule ? obj : { 'default': obj };
 				}
 
 				var _utils = __webpack_require__(4);
 
-				var Compiler = (function () {
-					function Compiler(exprs, notNormalized) {
-						_classCallCheck(this, Compiler);
+				var _JSONPathCompiler = __webpack_require__(5);
 
-						if (notNormalized !== false) {
-							exprs = parseJSONPath(exprs);
-						}
-						this.exprArray = exprs.map(function (lex) {
-							return lex.replace(/\{([^\{]*)\}/g, function ($0, $1) {
-								return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0].') + $1 + '';
-							});
-						});
-					}
+				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
 
-					Compiler.prototype._parseExpr = function _parseExpr(expr, lv, isLast) {
-						if ('..' === expr) {
-							return [function (input, ctx) {
-								// TODO recursive
-								return input + '';
-							}];
-						} else if ('*' === expr) {
-							return [function (input, ctx) {
-								return input + '\nfor(var i' + lv + ' in $' + (lv - 1) + '){\n' + 'if($' + (lv - 1) + '.hasOwnProperty(i' + lv + ')){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
-									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = i' + lv + ';\n');
-							}, function (input, ctx) {
-								return input + '\n}\n' + '\n}\n';
-							}];
-						} else if (/^\d+(,\d+)*$/.test(expr)) {
-							return [function (input, ctx) {
-								return input + '\nvar k' + lv + ' = [' + expr + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
-									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
-							}, function (input, ctx) {
-								return input + '\n}\n';
-							}];
-						} else if (/^\d+(:\d+){0,2}$/.test(expr)) {
-							return [function (input, ctx) {
-								var indexes = _utils.range.apply(null, expr.split(':').map(function (i) {
-									return parseInt(i);
-								}));
-								return input + '\nvar k' + lv + ' = [' + indexes.join(', ') + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
-									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
-							}, function (input, ctx) {
-								return input + '\n}\n';
-							}];
-						} else if (/^\?\(.*\)$/.test(expr)) {
-							return [function (input, ctx) {
-								return input + '\nfor(var i' + lv + ' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i' + lv + '++){\n' + 'if(' + expr.substring(1).replace(/@/g, '$' + (lv - 1) + '[i' + lv + ']') + '){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
-									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = i' + lv + ';\n');
-							}, function (input, ctx) {
-								return input + '\n}\n' + '\n}\n';
-							}];
-						} else if (/^\(.*\)$/.test(expr)) {
-							return [function (input, ctx) {
-								return input + 'var k' + lv + ' = ' + expr.replace(/@/g, '$' + (lv - 1)) + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
-									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = k' + lv + ';\n');
-							}];
-						} else if (/^\[.*\]$/.test(expr)) {
-							return [function (input, ctx) {
-								var key = expr.substring(1, expr.length - 1);
-								return input + 'var k' + lv + ' = ' + key + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + expr + ';\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
-									return 'pwd' + i;
-								}).join(', ') + '], ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = k' + lv + ';\n');
-							}];
-						} else {
-							throw new Error('unexpected expression: ' + expr + '');
-						}
-					};
-
-					Compiler.prototype.createMatcher = function createMatcher() {
-						var _this = this;
-
-						var lastIndex = this.exprArray.length - 1;
-						var processors = this.exprArray.map(function (expr, i) {
-							if (i === 0) {
-								return [function (input, ctx) {
-									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [], ' + 'name: pwd0, ' + 'value: $0' + '});\n' : '');
-								}, function (input, ctx) {
-									return input + '\nreturn matches;';
-								}];
-							} else {
-								return _this._parseExpr(expr, i, i === lastIndex);
+				function actionCreatorFactory(stateGetter, collect) {
+					return function (keyPath, fn, opts) {
+						var options = Object.assign({ deps: [] }, opts);
+						var compiler = new _JSONPathCompiler2['default'](keyPath);
+						var matcher = compiler.createMatcher();
+						return function () {
+							for (var _len = arguments.length, payloads = Array(_len), _key = 0; _key < _len; _key++) {
+								payloads[_key] = arguments[_key];
 							}
-						});
-						// console.log(stackProcess("", processors))
-						return new Function('$', 'args', _utils.stackProcess("", processors));
+
+							var $ = stateGetter();
+							return matcher($, payloads).map(function (result) {
+								//FIXME collect之后应该clone新的state，否则action执行多次时会只使用最后一个的newCur
+								var $ = stateGetter();
+								var pwd = result.pwd.slice(1);
+								var setter = function setter(newValue) {
+									var oldCur = $;
+									var newCur = _utils.clone($);
+									var cur = newCur;
+									pwd.forEach(function (key) {
+										if (key !== null) {
+											cur[key] = _utils.clone(oldCur[key]);
+											cur = cur[key];
+											oldCur = oldCur[key];
+										}
+									});
+									if (result.name !== null) {
+										cur[result.name] = newValue;
+										collect(newCur, result.pwd, result.name);
+									} else {
+										collect(newValue, result.pwd);
+									}
+								};
+								var args = payloads.concat([result.value, setter]);
+								return fn.apply(result, args);
+							});
+						};
 					};
-
-					return Compiler;
-				})();
-
-				exports.Compiler = Compiler;
-				var lexers = [[function (input, ctx) {
-					// braces
-					var paramExprs = ctx.paramExprs = [];
-					return input.replace(/\{([^\{]*)\}/g, function ($0, $1) {
-						return '#{' + (paramExprs.push($1) - 1) + '}';
-					});
-				}, function (input, ctx) {
-					var paramExprs = ctx.paramExprs;
-
-					return input.map(function (p) {
-						return p.replace(/^#\{(\d+)\}$/, function ($0, $1) {
-							return '[{' + paramExprs[$1] + '}]';
-						})
-						//FIXME .replace(/(?=\w+)#\{(\d+)\}(?=\w+)/g,($0, $1) => '"+{' + paramExprs[$1] + '}+"')
-						.replace(/#\{(\d+)\}/g, function ($0, $1) {
-							return '{' + paramExprs[$1] + '}';
-						});
-					});
-				}], [function (input, ctx) {
-					// predict [(...)],[?(...)]
-					var predictExprs = ctx.predictExprs = [];
-					return input.replace(/[\['](\??\(.*?\))[\]']/g, function ($0, $1) {
-						return ';##' + (predictExprs.push($1) - 1);
-					});
-				}, function (input, ctx) {
-					var predictExprs = ctx.predictExprs;
-
-					return input.map(function (p) {
-						return p.replace(/^##(\d+)$/, function ($0, $1) {
-							return predictExprs[$1];
-						});
-					});
-				}], [function (input, ctx) {
-					// dot identifer
-					var identifers = ctx.identifers = [];
-					return input.replace(/(?:\.)([A-Z_$]+[0-9A-Z_$]*)/ig, function ($0, $1) {
-						return ';###' + (identifers.push($1) - 1);
-					});
-				}, function (input, ctx) {
-					var identifers = ctx.identifers;
-
-					return input.map(function (p) {
-						return p.replace(/^###(\d+)$/, function ($0, $1) {
-							return '["' + identifers[$1] + '"]';
-						});
-					});
-				}], [function (input, ctx) {
-					return input.replace(/[\.\[]/g, ';');
-				}], [function (input, ctx) {
-					return input.replace(/;;;|;;/g, ';..;').replace(/;$|'?\]|'$/g, '');
-				}], [function (input, ctx) {
-					return input.split(';');
-				}, function (input, ctx) {
-					return input.map(function (p) {
-						return p.replace(/^(\d+)$/, '[$1]');
-					});
-				}]];
-				exports.lexers = lexers;
-
-				function parseJSONPath(expr) {
-					return _utils.stackProcess(expr, lexers);
 				}
+
+				module.exports = exports['default'];
 
 				/***/
 			},
@@ -20354,17 +20276,6 @@
 				};
 
 				exports.has = has;
-				var pairs = function pairs(obj) {
-					var arr = [];
-					for (var k in obj) {
-						if (has(obj, k)) {
-							arr.push([k, obj[k]]);
-						}
-					}
-					return arr;
-				};
-
-				exports.pairs = pairs;
 				var keys = nativeKeys || function (obj) {
 					var keys = [];
 					for (var key in obj) if (has(obj, key)) keys.push(key);
@@ -20386,6 +20297,27 @@
 				};
 
 				exports.assign = assign;
+				var compose = function compose() {
+					for (var _len2 = arguments.length, fns = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+						fns[_key2] = arguments[_key2];
+					}
+
+					if (fns.length === 1 && isArray(fns[0])) {
+						fns = fns[0];
+					}
+					var len = fns.length;
+					return function () {
+						for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+							args[_key3] = arguments[_key3];
+						}
+
+						return fns.map(function (fn) {
+							return fn.apply(null, args);
+						})[len - 1];
+					};
+				};
+
+				exports.compose = compose;
 				var clone = function clone(obj) {
 					if (!obj) return obj;
 					if (isArray(obj)) {
@@ -20440,60 +20372,240 @@
 				'use strict';
 
 				exports.__esModule = true;
-				exports['default'] = actionCreatorFactory;
+
+				var _createClass = (function () {
+					function defineProperties(target, props) {
+						for (var i = 0; i < props.length; i++) {
+							var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ('value' in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
+						}
+					}return function (Constructor, protoProps, staticProps) {
+						if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
+					};
+				})();
+
+				function _interopRequireDefault(obj) {
+					return obj && obj.__esModule ? obj : { 'default': obj };
+				}
+
+				function _classCallCheck(instance, Constructor) {
+					if (!(instance instanceof Constructor)) {
+						throw new TypeError('Cannot call a class as a function');
+					}
+				}
 
 				var _utils = __webpack_require__(4);
 
-				var _JSONPathCompiler = __webpack_require__(3);
+				var _lexers = __webpack_require__(6);
 
-				function actionCreatorFactory(stateParent, broadcastMap, collect) {
-					return function (keyPath, fn, opts) {
-						var options = Object.assign({ deps: [] }, opts);
-						var parsedKeyPath = _JSONPathCompiler.parseJSONPath(keyPath);
-						var parsedKeyPathStr = parsedKeyPath.join('');
-						var compiler = new _JSONPathCompiler.Compiler(parsedKeyPath, false);
-						var matcher = compiler.createMatcher();
-						var depsGetters = options.deps.map(function (kp) {
-							return new _JSONPathCompiler.Compiler(kp).createMatcher();
-						});
-						var castFns = Object.keys(broadcastMap).filter(function (v) {
-							return parsedKeyPathStr.indexOf(v) === 0;
-						}).map(function (k) {
-							return broadcastMap[k];
-						}).reduce(function (acc, i) {
-							return acc.concat(i);
-						}, []);
-						return function () {
-							for (var _len = arguments.length, payloads = Array(_len), _key = 0; _key < _len; _key++) {
-								payloads[_key] = arguments[_key];
-							}
+				var _lexers2 = _interopRequireDefault(_lexers);
 
-							var matchDeps = depsGetters.map(function (get) {
-								return get(stateParent.$, payloads).map(function (r) {
-									return r.value;
-								});
-							});
-							var execResults = matcher(stateParent.$, payloads).map(function (result) {
-								return fn.apply(null, payloads.concat(matchDeps).concat([result.value, function (newValue) {
-									var newCur = stateParent,
-									    oldCur = stateParent;
-									result.pwd.forEach(function (key) {
-										newCur[key] = _utils.clone(oldCur[key]);
-										newCur = newCur[key];
-										oldCur = oldCur[key];
-									});
-									newCur[result.name] = newValue;
-									collect(stateParent.$);
-								}, result]));
-							});
-							castFns.forEach(function (fn) {
-								return fn.apply(null, []);
-							});
-							return execResults;
-						};
+				function JSONPath(source, expr) {
+					var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+					var resultType = (options.resultType || 'value').toUpperCase();
+					var getResult = function getResult(v) {
+						return v;
 					};
+					if (resultType === 'VALUE') {
+						getResult = function (v) {
+							return v.value;
+						};
+					} else if (resultType === 'PATH') {
+						getResult = function (v) {
+							return v.pwd.concat([v.name]).filter(function (v) {
+								return !!v;
+							});
+						};
+					}
+					return new Compiler(expr).createMatcher()(source).map(getResult);
+				}
+				function parseJSONPath(expr) {
+					return _utils.stackProcess(expr, _lexers2['default']);
 				}
 
+				var Compiler = (function () {
+					_createClass(Compiler, null, [{
+						key: 'JSONPath',
+						value: JSONPath,
+						enumerable: true
+					}, {
+						key: 'parseJSONPath',
+						value: parseJSONPath,
+						enumerable: true
+					}]);
+
+					function Compiler(exprs, notNormalized) {
+						_classCallCheck(this, Compiler);
+
+						if (notNormalized !== false) {
+							exprs = parseJSONPath(exprs);
+						}
+						this.exprArray = exprs.map(function (lex) {
+							return lex.replace(/\{([^\{]*)\}/g, function ($0, $1) {
+								return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0].') + $1 + '';
+							});
+						});
+					}
+
+					Compiler.prototype.createMatcher = function createMatcher() {
+						var _this = this;
+
+						var lastIndex = this.exprArray.length - 1;
+						var processors = _utils.stackProcess("", this.exprArray.map(function (expr, i) {
+							if (i === 0) {
+								return [function (input, ctx) {
+									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [pwd0], ' + 'name: null, ' + 'value: $0' + '});\n' : '');
+								}, function (input, ctx) {
+									return input + '\nreturn matches;';
+								}];
+							} else {
+								return _this._parseExpr(expr, i, i === lastIndex);
+							}
+						}));
+						try {
+							return new Function('$', 'args', processors);
+						} catch (e) {
+							throw new Error(e + '\nfunction matcher($, args){\n' + processors + '\n}');
+						}
+					};
+
+					Compiler.prototype._parseExpr = function _parseExpr(expr, lv, isLast) {
+						if ('..' === expr) {
+							return [function (input, ctx) {
+								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, rootCur, pwd, key){\n' + 'pwd = pwd || [];\n' + 'key = key || null;\n' + 'visit(rootCur, key, pwd, breakFn);\n' + 'newPwd = key !== null ? pwd.concat(key) : pwd' + '\nif(stop === false && typeof rootCur === "object"){\n' + '\nfor(var i in rootCur){\n' + '\nif(rootCur.hasOwnProperty(i) && typeof rootCur[i] === "object" && stop === false){\n' + 'recurfn' + lv + '(visit, rootCur[i], newPwd, i);\n' + '}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv - 1).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '].concat(pwd),' + 'name: key,' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = key;\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '\n},$' + (lv - 1) + '))\n';
+							}];
+						} else if ('*' === expr) {
+							return [function (input, ctx) {
+								return input + '\nfor(var i' + lv + ' in $' + (lv - 1) + '){\n' + 'if($' + (lv - 1) + '.hasOwnProperty(i' + lv + ')){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = i' + lv + ';\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
+							}];
+						} else if (/^\d+(,\d+)*$/.test(expr)) {
+							return [function (input, ctx) {
+								return input + '\nvar k' + lv + ' = [' + expr + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '\n}\n';
+							}];
+						} else if (/^\d+(:\d+){0,2}$/.test(expr)) {
+							return [function (input, ctx) {
+								var indexes = _utils.range.apply(null, expr.split(':').map(function (i) {
+									return parseInt(i);
+								}));
+								return input + '\nvar k' + lv + ' = [' + indexes.join(', ') + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '\n}\n';
+							}];
+						} else if (/^\?\(.*\)$/.test(expr)) {
+							return [function (input, ctx) {
+								return input + '\nfor(var i' + lv + ' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i' + lv + '++){\n' + 'if(' + expr.substring(1).replace(/@/g, '$' + (lv - 1) + '[i' + lv + ']') + '){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = i' + lv + ';\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
+							}];
+						} else if (/^\(.*\)$/.test(expr)) {
+							return [function (input, ctx) {
+								return input + 'var k' + lv + ' = ' + expr.replace(/@/g, '$' + (lv - 1)) + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '],' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + ';\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '';
+							}];
+						} else if (/^\[.*\]$/.test(expr)) {
+							return [function (input, ctx) {
+								var key = expr.substring(1, expr.length - 1);
+								return input + 'var k' + lv + ' = ' + key + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + expr + ';\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+									return 'pwd' + i;
+								}).join(', ') + '], ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + ';\n');
+							}, function (input, ctx) {
+								return input + (isLast ? '' : '\n}\n') + '';
+							}];
+						} else {
+							throw new Error('unexpected expression: ' + expr + '');
+						}
+					};
+
+					return Compiler;
+				})();
+
+				exports['default'] = Compiler;
+				module.exports = exports['default'];
+
+				/***/
+			},
+			/* 6 */
+			function (module, exports) {
+
+				'use strict';
+
+				exports.__esModule = true;
+				exports['default'] = [[function (input, ctx) {
+					// braces
+					var paramExprs = ctx.paramExprs = [];
+					return input.replace(/\{([^\{]*)\}/g, function ($0, $1) {
+						return '#{' + (paramExprs.push($1) - 1) + '}';
+					});
+				}, function (input, ctx) {
+					var paramExprs = ctx.paramExprs;
+
+					return input.map(function (p) {
+						return p.replace(/^#\{(\d+)\}$/, function ($0, $1) {
+							return '[{' + paramExprs[$1] + '}]';
+						})
+						//FIXME .replace(/(?=\w+)#\{(\d+)\}(?=\w+)/g,($0, $1) => '"+{' + paramExprs[$1] + '}+"')
+						.replace(/#\{(\d+)\}/g, function ($0, $1) {
+							return '{' + paramExprs[$1] + '}';
+						});
+					});
+				}], [function (input, ctx) {
+					// predict [(...)],[?(...)]
+					var predictExprs = ctx.predictExprs = [];
+					return input.replace(/[\['](\??\(.*?\))[\]']/g, function ($0, $1) {
+						return ';##' + (predictExprs.push($1) - 1);
+					});
+				}, function (input, ctx) {
+					var predictExprs = ctx.predictExprs;
+
+					return input.map(function (p) {
+						return p.replace(/^##(\d+)$/, function ($0, $1) {
+							return predictExprs[$1];
+						});
+					});
+				}], [function (input, ctx) {
+					// dot identifer
+					var identifers = ctx.identifers = [];
+					return input.replace(/(?:\.)([A-Z_$]+[0-9A-Z_$]*)/ig, function ($0, $1) {
+						return ';###' + (identifers.push($1) - 1);
+					});
+				}, function (input, ctx) {
+					var identifers = ctx.identifers;
+
+					return input.map(function (p) {
+						return p.replace(/^###(\d+)$/, function ($0, $1) {
+							return '["' + identifers[$1] + '"]';
+						});
+					});
+				}], [function (input, ctx) {
+					return input.replace(/[\.\[]/g, ';');
+				}], [function (input, ctx) {
+					return input.replace(/;;;|;;/g, ';..;').replace(/;$|'?\]|'$/g, '');
+				}], [function (input, ctx) {
+					return input.split(';');
+				}, function (input, ctx) {
+					return input.map(function (p) {
+						return p.replace(/^(\d+)$/, '[$1]');
+					});
+				}]];
 				module.exports = exports['default'];
 
 				/***/
@@ -20503,7 +20615,7 @@
 	});
 	;
 	//# sourceMappingURL=index.js.map
-	/***/ /***/ /***/ /***/ /***/ /***/
+	/***/ /***/ /***/ /***/ /***/ /***/ /***/
 
 /***/ },
 /* 166 */
@@ -20527,9 +20639,19 @@
 
 	var _TodoItem2 = _interopRequireDefault(_TodoItem);
 
-	var _actionsToggleCompleteAll = __webpack_require__(172);
+	var _actions = __webpack_require__(163);
 
-	var _actionsToggleCompleteAll2 = _interopRequireDefault(_actionsToggleCompleteAll);
+	var filters = {
+	  all: function all() {
+	    return true;
+	  },
+	  active: function active(todo) {
+	    return !todo.completed;
+	  },
+	  completed: function completed(todo) {
+	    return todo.completed;
+	  }
+	};
 
 	var MainSection = (function (_Component) {
 	  _inherits(MainSection, _Component);
@@ -20542,27 +20664,28 @@
 	  }
 
 	  MainSection.prototype._onToggleCompleteAll = function _onToggleCompleteAll() {
-	    _actionsToggleCompleteAll2['default']();
+	    _actions.toggleAllCompleted();
 	  };
 
 	  MainSection.prototype.render = function render() {
-	    var allTodos = this.props.allTodos;
+	    var _props = this.props;
+	    var allTodos = _props.allTodos;
+	    var visibility = _props.visibility;
 
 	    if (allTodos.length < 1) {
 	      return null;
 	    }
-
-	    var todos = allTodos.map(function (todo) {
-	      return _react2['default'].createElement(_TodoItem2['default'], { key: todo.id, todo: todo });
-	    });
+	    var predict = filters[visibility];
 	    return _react2['default'].createElement(
 	      'section',
-	      { id: 'main' },
+	      { className: 'main' },
 	      _react2['default'].createElement('input', {
-	        id: 'toggle-all',
+	        className: 'toggle-all',
 	        type: 'checkbox',
 	        onChange: this._onToggleCompleteAll,
-	        defaultChecked: this.props.areAllComplete ? true : false
+	        defaultChecked: allTodos.every(function (t) {
+	          return t.completed;
+	        })
 	      }),
 	      _react2['default'].createElement(
 	        'label',
@@ -20571,8 +20694,10 @@
 	      ),
 	      _react2['default'].createElement(
 	        'ul',
-	        { id: 'todo-list' },
-	        todos
+	        { className: 'todo-list' },
+	        allTodos.filter(predict).map(function (todo) {
+	          return _react2['default'].createElement(_TodoItem2['default'], { key: todo.id, todo: todo });
+	        })
 	      )
 	    );
 	  };
@@ -20609,17 +20734,9 @@
 
 	var _TodoTextInput2 = _interopRequireDefault(_TodoTextInput);
 
-	var _actionsUpdateTodo = __webpack_require__(169);
+	var _actions = __webpack_require__(163);
 
-	var _actionsUpdateTodo2 = _interopRequireDefault(_actionsUpdateTodo);
-
-	var _actionsToggleComplete = __webpack_require__(170);
-
-	var _actionsToggleComplete2 = _interopRequireDefault(_actionsToggleComplete);
-
-	var _actionsDestroy = __webpack_require__(171);
-
-	var _actionsDestroy2 = _interopRequireDefault(_actionsDestroy);
+	var _store = __webpack_require__(164);
 
 	var TodoItem = (function (_Component) {
 	  _inherits(TodoItem, _Component);
@@ -20638,15 +20755,12 @@
 	  }
 
 	  TodoItem.prototype._onSave = function _onSave(text) {
-	    _actionsUpdateTodo2['default']({
-	      id: this.props.todo.id,
-	      text: text
-	    });
+	    _actions.updateTodo(this.props.todo, text);
 	    this.setState({ isEditing: false });
 	  };
 
 	  TodoItem.prototype._onToggleComplete = function _onToggleComplete() {
-	    _actionsToggleComplete2['default'](this.props.todo);
+	    _actions.toggleTodo(this.props.todo);
 	  };
 
 	  TodoItem.prototype._onDoubleClick = function _onDoubleClick() {
@@ -20654,7 +20768,7 @@
 	  };
 
 	  TodoItem.prototype._onDestroyClick = function _onDestroyClick() {
-	    _actionsDestroy2['default'](this.props.todo);
+	    _actions.destroyTodo(this.props.todo);
 	  };
 
 	  TodoItem.prototype.render = function render() {
@@ -20666,12 +20780,11 @@
 	      onSave: this._onSave,
 	      defaultValue: todo.text
 	    });
-
 	    return _react2['default'].createElement(
 	      'li',
 	      {
 	        className: _classnames2['default']({
-	          'completed': todo.complete,
+	          'completed': todo.completed,
 	          'editing': this.state.isEditing
 	        }),
 	        key: todo.id },
@@ -20681,7 +20794,7 @@
 	        _react2['default'].createElement('input', {
 	          className: 'toggle',
 	          type: 'checkbox',
-	          checked: todo.complete,
+	          checked: todo.completed,
 	          onChange: this._onToggleComplete
 	        }),
 	        _react2['default'].createElement(
@@ -20764,72 +20877,6 @@
 
 	exports.__esModule = true;
 
-	var _store = __webpack_require__(164);
-
-	exports['default'] = _store.createAction('$.todos[?(@.id === {id})].text', function (payload, oldText, res) {
-	  res(payload.text);
-	});
-	module.exports = exports['default'];
-
-/***/ },
-/* 170 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _store = __webpack_require__(164);
-
-	exports['default'] = _store.createAction('$.todos[?(@.id === {id})].complete', function (payload, complete, res) {
-	  res(!complete);
-	});
-	module.exports = exports['default'];
-
-/***/ },
-/* 171 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _store = __webpack_require__(164);
-
-	exports['default'] = _store.createAction('$.todos', function (payload, todos, res) {
-	  res(todos.filter(function (todo) {
-	    return todo.id !== payload.id;
-	  }));
-	});
-	module.exports = exports['default'];
-
-/***/ },
-/* 172 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _store = __webpack_require__(164);
-
-	exports['default'] = _store.createAction('$.todos.*.complete', function (allComplete, _, res) {
-	  res(!allComplete.every(function (i) {
-	    return i;
-	  }));
-	}, {
-	  deps: ['$.todos.*.complete']
-	});
-	module.exports = exports['default'];
-
-/***/ },
-/* 173 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
@@ -20840,9 +20887,11 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _actionsDestroyCompleted = __webpack_require__(174);
+	var _classnames = __webpack_require__(168);
 
-	var _actionsDestroyCompleted2 = _interopRequireDefault(_actionsDestroyCompleted);
+	var _classnames2 = _interopRequireDefault(_classnames);
+
+	var _actions = __webpack_require__(163);
 
 	var Footer = (function (_Component) {
 	  _inherits(Footer, _Component);
@@ -20855,11 +20904,13 @@
 	  }
 
 	  Footer.prototype._onClearCompletedClick = function _onClearCompletedClick() {
-	    _actionsDestroyCompleted2['default']();
+	    _actions.destroyCompleted();
 	  };
 
 	  Footer.prototype.render = function render() {
-	    var allTodos = this.props.allTodos;
+	    var _props = this.props;
+	    var allTodos = _props.allTodos;
+	    var visibility = _props.visibility;
 
 	    var total = allTodos.length;
 
@@ -20867,26 +20918,16 @@
 	      return null;
 	    }
 	    var completed = allTodos.filter(function (todo) {
-	      return todo.complete;
+	      return todo.completed;
 	    }).length;
 	    var itemsLeft = total - completed;
-	    var itemsLeftPhrase = itemsLeft === 1 ? ' item ' : ' items ';
-	    itemsLeftPhrase += 'left';
-	    var clearCompletedButton = !completed ? null : _react2['default'].createElement(
-	      'button',
-	      {
-	        id: 'clear-completed',
-	        onClick: this._onClearCompletedClick },
-	      'Clear completed (',
-	      completed,
-	      ')'
-	    );
+	    var itemsLeftPhrase = (itemsLeft === 1 ? ' item ' : ' items ') + 'left';
 	    return _react2['default'].createElement(
 	      'footer',
-	      { id: 'footer' },
+	      { className: 'footer' },
 	      _react2['default'].createElement(
 	        'span',
-	        { id: 'todo-count' },
+	        { className: 'todo-count' },
 	        _react2['default'].createElement(
 	          'strong',
 	          null,
@@ -20894,7 +20935,52 @@
 	        ),
 	        itemsLeftPhrase
 	      ),
-	      clearCompletedButton
+	      _react2['default'].createElement(
+	        'ul',
+	        { className: 'filters' },
+	        _react2['default'].createElement(
+	          'li',
+	          null,
+	          _react2['default'].createElement(
+	            'a',
+	            { href: '#/all', className: _classnames2['default']({ selected: visibility === 'all' }), onClick: function (e) {
+	                return _actions.switchFilter('all');
+	              } },
+	            'All'
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'li',
+	          null,
+	          _react2['default'].createElement(
+	            'a',
+	            { href: '#/active', className: _classnames2['default']({ selected: visibility === 'active' }), onClick: function (e) {
+	                return _actions.switchFilter('active');
+	              } },
+	            'Active'
+	          )
+	        ),
+	        _react2['default'].createElement(
+	          'li',
+	          null,
+	          _react2['default'].createElement(
+	            'a',
+	            { href: '#/completed', className: _classnames2['default']({ selected: visibility === 'completed' }), onClick: function (e) {
+	                return _actions.switchFilter('completed');
+	              } },
+	            'Completed'
+	          )
+	        )
+	      ),
+	      !completed ? null : _react2['default'].createElement(
+	        'button',
+	        {
+	          className: 'clear-completed',
+	          onClick: this._onClearCompletedClick },
+	        'Clear completed (',
+	        completed,
+	        ')'
+	      )
 	    );
 	  };
 
@@ -20902,23 +20988,6 @@
 	})(_react.Component);
 
 	exports['default'] = Footer;
-	module.exports = exports['default'];
-
-/***/ },
-/* 174 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _store = __webpack_require__(164);
-
-	exports['default'] = _store.createAction('$.todos', function (todos, res) {
-	  res(todos.filter(function (todo) {
-	    return !todo.complete;
-	  }));
-	});
 	module.exports = exports['default'];
 
 /***/ }
