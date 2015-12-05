@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack --config ./config/webpack.dev.js",
     "test": "JASMINE_CONFIG_PATH=test/support/jasmine.json istanbul cover jasmine",
-    "travis-test":"JASMINE_CONFIG_PATH=test/support/jasmine.json istanbul cover jasmine && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
+    "travis-test":"JASMINE_CONFIG_PATH=test/support/jasmine.json istanbul cover jasmine && (cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js)",
     "lint": "eslint src",
     "preversion": "npm test && npm run build",
     "postversion": "npm publish"
