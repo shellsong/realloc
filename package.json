@@ -1,7 +1,7 @@
 {
   "name": "realloc",
   "version": "0.0.5",
-  "description": "Observable, Immutable State Manager for Javascript Applications",
+  "description": "Observable and Immutable State Manager Base On JSONPath For Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
     "build": "webpack --config ./config/webpack.dev.js",

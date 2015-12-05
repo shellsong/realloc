@@ -92,7 +92,6 @@ var source = {
   }
 }
 describe('create compiler', () => {
-
   it('$', () => {
     var compiler = new Compiler('$')
     var fn = compiler.createMatcher()

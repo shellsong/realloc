@@ -1,4 +1,10 @@
-import { stackProcess, range} from './utils'
+import {
+  stackProcess,
+  range,
+  isPlainObject,
+  isArray,
+  hasOwnProperty
+} from './utils'
 import lexers from './lexers'
 function JSONPath(source, expr,options = {}){
   let resultType = (options.resultType||'value').toUpperCase()
@@ -6,7 +12,7 @@ function JSONPath(source, expr,options = {}){
   if(resultType === 'VALUE'){
     getResult = (v) => v.value
   }else if(resultType === 'PATH'){
-    getResult = (v) => v.pwd.concat([v.name]).filter((v) => !!v)
+    getResult = (v) => v.pwd.concat([v.name]).filter((v) => v !== null)
   }
   return ((new Compiler(expr)).createMatcher())(source).map(getResult)
 }
@@ -28,7 +34,7 @@ export default class Compiler {
   }
   createMatcher(){
     let lastIndex = this.exprArray.length - 1
-    let processors = stackProcess("", this.exprArray.map((expr, i) => {
+    let body = stackProcess("", this.exprArray.map((expr, i) => {
       if(i === 0){
         return [
           (input, ctx) => {
@@ -52,9 +58,12 @@ export default class Compiler {
       }
     }))
     try{
-      return new Function('$', 'args', processors)
+      let fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body)
+      return function matcher($, args){
+        return fn(isPlainObject, isArray, hasOwnProperty, range, $, args)
+      }
     }catch(e){
-      throw new Error(e + '\nfunction matcher($, args){\n' + processors + '\n}')
+      throw new Error(e + '\nfunction matcher($, args){\n' + body + '\n}')
     }
   }
   _parseExpr(expr, lv, isLast){
@@ -69,9 +78,22 @@ export default class Compiler {
                 'key = key || null;\n' +
                 'visit(rootCur, key, pwd, breakFn);\n' +
                 'newPwd = key !== null ? pwd.concat(key) : pwd' +
-              '\nif(stop === false && typeof rootCur === "object"){\n' +
-                '\nfor(var i in rootCur){\n' +
-                  '\nif(rootCur.hasOwnProperty(i) && typeof rootCur[i] === "object" && stop === false){\n' +
+              '\nif(stop === false && isPlainObject(rootCur)){\n' +
+
+                '\nvar rootCurKeys;\n'+
+                '\nif(isArray(rootCur)){\n'+
+                  'rootCurKeys = range(rootCur.length);'+
+                '\n}else{\n'+
+                  'rootCurKeys = [];'+
+                  '\nfor(var k in rootCur){\n'+
+                    '\nif(hasOwnProperty.call(rootCur,k)){\n'+
+                      'rootCurKeys.push(k);\n'+
+                    '\n}\n'+
+                  '\n}\n'+
+                '\n}\n'+
+
+                '\nfor(var i = 0; i < rootCurKeys.length; i++){\n' +
+                  '\nif(isPlainObject(rootCur[i]) && stop === false){\n' +
                     'recurfn'+lv+'(visit, rootCur[i], newPwd, i);\n' +
                   '}\n' +
                 '}\n' +
@@ -86,38 +108,47 @@ export default class Compiler {
               'value: $' + lv +
             '});\n'
             ):(
-            '\nif($'+lv+' !== (void 0)){'+
+            '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
             'var pwd' + lv + ' = key;\n'
             ))
         },
         (input, ctx) => {
           return input +
-                    (isLast?'':'\n}\n')+
-                  '\n},$'+(lv - 1)+'))\n'
+              (isLast?'':'\n}else{throw new Error()}\n')+
+            '\n},$'+(lv - 1)+'))\n'
         }
       ]
     }else if('*' === expr){
       return [
         (input,ctx) => {
           return input +
-                '\nfor(var i'+lv+' in $'+(lv - 1)+'){\n'+
-                    'if($'+(lv - 1)+'.hasOwnProperty(i'+lv+')){\n'+
-                      'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
-                      (isLast?(
-                      'matches.push({' +
-                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
-                        'name: i'+lv+','+
-                        'value: $' + lv +
-                      '});\n'
-                      ):(
-                      '\nif($'+lv+' !== (void 0)){'+
-                      'var pwd' + lv + ' = i'+lv+';\n'
-                      ))
+                '\nvar $$'+(lv - 1)+';\n'+
+                '\nif(isArray($'+(lv - 1)+')){\n'+
+                  '$$'+(lv - 1)+' = range($'+(lv - 1)+'.length);'+
+                '\n}else{\n'+
+                  '$$'+(lv - 1)+' = [];'+
+                  '\nfor(var k'+lv+' in $'+(lv - 1)+'){\n'+
+                    '\nif(hasOwnProperty.call($'+(lv - 1)+',k'+lv+')){\n'+
+                      '$$'+(lv - 1)+'.push(k'+lv+');\n'+
+                    '\n}\n'+
+                  '\n}\n'+
+                '\n}\n'+
+                '\nfor(var i'+lv+' = 0;i'+lv+' < $$'+(lv-1)+'.length;i'+lv+'++){\n'+
+                    'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
+                    (isLast?(
+                    'matches.push({' +
+                      'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                      'name: i'+lv+','+
+                      'value: $' + lv +
+                    '});\n'
+                    ):(
+                    '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
+                    'var pwd' + lv + ' = i'+lv+';\n'
+                    ))
         },
         (input, ctx) => {
           return input +
-                  (isLast?'':'\n}\n')+
-                  '\n}\n'+
+                  (isLast?'':'\n}else{throw new Error()}\n')+
                 '\n}\n'
         }
       ]
@@ -135,13 +166,13 @@ export default class Compiler {
                       'value: $' + lv +
                     '});\n'
                     ):(
-                    '\nif($'+lv+' !== (void 0)){'+
+                    '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
                     'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
                     ))
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}\n')+
+                (isLast?'':'\n}else{throw new Error()}\n')+
                 '\n}\n'
         }
       ]
@@ -160,13 +191,13 @@ export default class Compiler {
                       'value: $' + lv +
                     '});\n'
                     ):(
-                    '\nif($'+lv+' !== (void 0)){'+
+                    '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
                     'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
                     ))
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}\n')+
+                (isLast?'':'\n}else{throw new Error()}\n')+
                 '\n}\n'
         }
       ]
@@ -186,13 +217,13 @@ export default class Compiler {
                         'value: $' + lv +
                       '});\n'
                       ):(
-                      '\nif($'+lv+' !== (void 0)){'+
+                      '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
                       'var pwd' + lv + ' = i' + lv +';\n'
                       ))
         },
         (input, ctx) => {
           return input +
-                  (isLast?'':'\n}\n')+
+                  (isLast?'':'\n}else{throw new Error()}\n')+
                   '\n}\n'+
                 '\n}\n'
         }
@@ -210,13 +241,13 @@ export default class Compiler {
                   'value: $' + lv +
                 '});\n'
                 ):(
-                '\nif($'+lv+' !== (void 0)){'+
+                '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
                 'var pwd' + lv + ' = k' + lv +';\n'
                 ))
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}\n')+
+                (isLast?'':'\n}else{throw new Error()}\n')+
                 ''
         }
       ]
@@ -234,13 +265,13 @@ export default class Compiler {
                   'value: $' + lv +
                 '});\n'
                 ):(
-                  '\nif($'+lv+' !== (void 0)){'+
+                '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
                 'var pwd' + lv + ' = k' + lv +';\n'
                 ))
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}\n')+
+                (isLast?'':'\n}else{throw new Error()}\n')+
                 ''
         }
       ]

@@ -29,6 +29,16 @@ export const isObject = function (obj){
   return type === 'function' || type === 'object' && !!obj
 }
 
+export const isPlainObject = function (obj){
+  if(typeof obj !== 'object'){
+    return false
+  }
+  if ( obj.constructor &&
+    !hasOwnProperty.call( obj.constructor.prototype, "isPrototypeOf" ) ) {
+    return false;
+  }
+  return true
+}
 export const isArray = nativeIsArray || function (obj){
   return toString.call(obj) === '[object Array]'
 }
@@ -54,16 +64,6 @@ export const assign = nativeAssign || function(target, ...sources){
     })
   })
   return target
-}
-
-export const compose = function(...fns){
-  if(fns.length === 1 && isArray(fns[0])){
-    fns = fns[0]
-  }
-  let len = fns.length
-  return (...args) => {
-    return fns.map((fn) => fn.apply(null, args))[len - 1]
-  }
 }
 
 export const clone = function (obj){
