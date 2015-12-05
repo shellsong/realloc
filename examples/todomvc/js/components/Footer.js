@@ -3,6 +3,10 @@ import React, {Component, PropTypes} from 'react'
 import cx from 'classnames'
 import {destroyCompleted, switchFilter} from '../actions'
 
+function onHashChange(){
+  switchFilter(window.location.hash.replace(/^#/,''))
+}
+
 export default class Footer extends Component {
   constructor(props, context){
     super(props, context)
@@ -10,6 +14,12 @@ export default class Footer extends Component {
   }
   _onClearCompletedClick(){
     destroyCompleted()
+  }
+  componentDidMount(){
+    window.addEventListener('hashchange', onHashChange)
+  }
+  componentWillUnmount(){
+    window.removeEventListener('hashchange', onHashChange)
   }
   render(){
     let {allTodos, visibility} = this.props
@@ -30,9 +40,9 @@ export default class Footer extends Component {
           {itemsLeftPhrase}
         </span>
         <ul className="filters">
-					<li><a href="#/all" className={cx({selected:visibility === 'all'})} onClick={(e) => switchFilter('all')}>All</a></li>
-					<li><a href="#/active" className={cx({selected:visibility === 'active'})} onClick={(e) => switchFilter('active')}>Active</a></li>
-					<li><a href="#/completed"  className={cx({selected:visibility === 'completed'})} onClick={(e) => switchFilter('completed')}>Completed</a></li>
+					<li><a href="#all" className={cx({selected:visibility === 'all'})}>All</a></li>
+					<li><a href="#active" className={cx({selected:visibility === 'active'})}>Active</a></li>
+					<li><a href="#completed"  className={cx({selected:visibility === 'completed'})}>Completed</a></li>
 				</ul>
         {
           !completed ? null : (

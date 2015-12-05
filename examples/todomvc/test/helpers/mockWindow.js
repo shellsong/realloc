@@ -1,0 +1,5 @@
+global.window = {
+  location:{
+    hash:''
+  }
+}

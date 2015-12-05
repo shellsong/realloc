@@ -26,28 +26,43 @@ describe('todoapp', () => {
       expect(todo.text).toBe('test createTodo'+i)
     })
   })
-  it('toggleAllCompleted to true when all is false', () => {
-    Array(10).join(',').split(',').forEach((_, i) => {
-      createTodo('test createTodo'+i)
-    })
-    toggleAllCompleted()
-    expect(getState().todos.map((t) => t.completed).every((c) => c)).toBe(true)
+  it('toggle a todo', () => {
+
   })
-  it('toggleAllCompleted to true when some is true', () => {
-    Array(10).join(',').split(',').forEach((_, i) => {
-      createTodo('test createTodo'+i)
-    })
-    toggleTodo(getState().todos[0])
-    toggleTodo(getState().todos[4])
-    toggleAllCompleted()
-    expect(getState().todos.map((t) => t.completed).every((c) => c)).toBe(true)
+  it('update a todo', () => {
+
   })
-  it('toggleAllCompleted to false when all is true', () => {
-    Array(10).join(',').split(',').forEach((_, i) => {
-      createTodo('test createTodo'+i)
-    })
-    getState().todos.forEach((t) => toggleTodo(t))
-    toggleAllCompleted()
-    expect(getState().todos.map((t) => t.completed).every((c) => !c)).toBe(true)
+  it('delete a todo', () => {
+
   })
+  it('delete all completed todos', () => {
+
+  })
+  describe('toggle all completed todos', () => {
+    it('toggle all completed todos to true when all is false', () => {
+      Array(10).join(',').split(',').forEach((_, i) => {
+        createTodo('test createTodo'+i)
+      })
+      toggleAllCompleted()
+      expect(getState().todos.map((t) => t.completed).every((c) => c)).toBe(true)
+    })
+    it('toggle all completed todos to true when some is true', () => {
+      Array(10).join(',').split(',').forEach((_, i) => {
+        createTodo('test createTodo'+i)
+      })
+      toggleTodo(getState().todos[0])
+      toggleTodo(getState().todos[4])
+      toggleAllCompleted()
+      expect(getState().todos.map((t) => t.completed).every((c) => c)).toBe(true)
+    })
+    it('toggle all completed todos to false when all is true', () => {
+      Array(10).join(',').split(',').forEach((_, i) => {
+        createTodo('test createTodo'+i)
+      })
+      getState().todos.forEach((t) => toggleTodo(t))
+      toggleAllCompleted()
+      expect(getState().todos.map((t) => t.completed).every((c) => !c)).toBe(true)
+    })
+  })
+
 })

@@ -3,12 +3,8 @@ import React, {Component, PropTypes} from 'react'
 import TodoItem from './TodoItem'
 
 import {toggleAllCompleted} from '../actions'
+import {visibilityFilters} from '../constants'
 
-const filters = {
-  all:() => true,
-  active:(todo) => !todo.completed,
-  completed:(todo) => todo.completed
-}
 
 export default class MainSection extends Component {
   constructor(props, context){
@@ -23,7 +19,7 @@ export default class MainSection extends Component {
     if (allTodos.length < 1) {
       return null;
     }
-    let predict = filters[visibility]
+    let predict = visibilityFilters[visibility] || visibilityFilters['all']
     return (
       <section className="main">
         <input

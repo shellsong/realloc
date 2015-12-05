@@ -19681,11 +19681,11 @@
 
 	var _Header2 = _interopRequireDefault(_Header);
 
-	var _MainSection = __webpack_require__(166);
+	var _MainSection = __webpack_require__(167);
 
 	var _MainSection2 = _interopRequireDefault(_MainSection);
 
-	var _Footer = __webpack_require__(169);
+	var _Footer = __webpack_require__(170);
 
 	var _Footer2 = _interopRequireDefault(_Footer);
 
@@ -19964,25 +19964,20 @@
 
 	var _realloc = __webpack_require__(165);
 
+	var _constants = __webpack_require__(166);
+
+	var visibility = window.location.hash.replace(/^#/, '');
+	if (Object.keys(_constants.visibilityFilters).indexOf(visibility) == -1) {
+	  visibility = 'all';
+	  window.location.hash = '#all';
+	}
+
 	var initialState = {
 	  todos: [],
-	  visibility: 'all'
+	  visibility: window.location.hash ? window.location.hash.replace(/^#/, '') : 'all'
 	};
-	// var localStorage
-	// if(localStorage){
-	//   let cache = localStorage.getItem('todoapp')
-	//   if(cache){
-	//     initialState = JSON.parse(cache)
-	//   }
-	// }
 
-	var store = _realloc.createObservableState(initialState);
-	exports['default'] = store;
-
-	store.subscribe(function (a) {
-	  // console.log(a.todos.map((a) => a.completed))
-	  // localStorage.setItem('todoapp', JSON.stringify(a))
-	});
+	exports['default'] = _realloc.createObservableState(initialState);
 	module.exports = exports['default'];
 
 /***/ },
@@ -20191,7 +20186,7 @@
 
 							var $ = stateGetter();
 							return matcher($, payloads).map(function (result) {
-								//FIXME collect之后应该clone新的state，否则action执行多次时会只使用最后一个的newCur
+								//TODO collect之后应该clone新的state，循环使用，减少collect
 								var $ = stateGetter();
 								var pwd = result.pwd.slice(1);
 								var setter = function setter(newValue) {
@@ -20261,6 +20256,16 @@
 				};
 
 				exports.isObject = isObject;
+				var isPlainObject = function isPlainObject(obj) {
+					if (typeof obj !== 'object') {
+						return false;
+					}
+					if (obj.constructor && !hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf")) {
+						return false;
+					}
+					return true;
+				};
+				exports.isPlainObject = isPlainObject;
 				var isArray = nativeIsArray || function (obj) {
 					return toString.call(obj) === '[object Array]';
 				};
@@ -20297,27 +20302,6 @@
 				};
 
 				exports.assign = assign;
-				var compose = function compose() {
-					for (var _len2 = arguments.length, fns = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-						fns[_key2] = arguments[_key2];
-					}
-
-					if (fns.length === 1 && isArray(fns[0])) {
-						fns = fns[0];
-					}
-					var len = fns.length;
-					return function () {
-						for (var _len3 = arguments.length, args = Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-							args[_key3] = arguments[_key3];
-						}
-
-						return fns.map(function (fn) {
-							return fn.apply(null, args);
-						})[len - 1];
-					};
-				};
-
-				exports.compose = compose;
 				var clone = function clone(obj) {
 					if (!obj) return obj;
 					if (isArray(obj)) {
@@ -20413,7 +20397,7 @@
 					} else if (resultType === 'PATH') {
 						getResult = function (v) {
 							return v.pwd.concat([v.name]).filter(function (v) {
-								return !!v;
+								return v !== null;
 							});
 						};
 					}
@@ -20451,7 +20435,7 @@
 						var _this = this;
 
 						var lastIndex = this.exprArray.length - 1;
-						var processors = _utils.stackProcess("", this.exprArray.map(function (expr, i) {
+						var body = _utils.stackProcess("", this.exprArray.map(function (expr, i) {
 							if (i === 0) {
 								return [function (input, ctx) {
 									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [pwd0], ' + 'name: null, ' + 'value: $0' + '});\n' : '');
@@ -20463,36 +20447,45 @@
 							}
 						}));
 						try {
-							return new Function('$', 'args', processors);
+							var _ret = (function () {
+								var fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body);
+								return {
+									v: function matcher($, args) {
+										return fn(_utils.isPlainObject, _utils.isArray, _utils.hasOwnProperty, _utils.range, $, args);
+									}
+								};
+							})();
+
+							if (typeof _ret === 'object') return _ret.v;
 						} catch (e) {
-							throw new Error(e + '\nfunction matcher($, args){\n' + processors + '\n}');
+							throw new Error(e + '\nfunction matcher($, args){\n' + body + '\n}');
 						}
 					};
 
 					Compiler.prototype._parseExpr = function _parseExpr(expr, lv, isLast) {
 						if ('..' === expr) {
 							return [function (input, ctx) {
-								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, rootCur, pwd, key){\n' + 'pwd = pwd || [];\n' + 'key = key || null;\n' + 'visit(rootCur, key, pwd, breakFn);\n' + 'newPwd = key !== null ? pwd.concat(key) : pwd' + '\nif(stop === false && typeof rootCur === "object"){\n' + '\nfor(var i in rootCur){\n' + '\nif(rootCur.hasOwnProperty(i) && typeof rootCur[i] === "object" && stop === false){\n' + 'recurfn' + lv + '(visit, rootCur[i], newPwd, i);\n' + '}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv - 1).map(function (i) {
+								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, rootCur, pwd, key){\n' + 'pwd = pwd || [];\n' + 'key = key || null;\n' + 'visit(rootCur, key, pwd, breakFn);\n' + 'newPwd = key !== null ? pwd.concat(key) : pwd' + '\nif(stop === false && isPlainObject(rootCur)){\n' + '\nvar rootCurKeys;\n' + '\nif(isArray(rootCur)){\n' + 'rootCurKeys = range(rootCur.length);' + '\n}else{\n' + 'rootCurKeys = [];' + '\nfor(var k in rootCur){\n' + '\nif(hasOwnProperty.call(rootCur,k)){\n' + 'rootCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < rootCurKeys.length; i++){\n' + '\nif(isPlainObject(rootCur[i]) && stop === false){\n' + 'recurfn' + lv + '(visit, rootCur[i], newPwd, i);\n' + '}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv - 1).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '].concat(pwd),' + 'name: key,' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = key;\n');
+								}).join(', ') + '].concat(pwd),' + 'name: key,' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = key;\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n},$' + (lv - 1) + '))\n';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n},$' + (lv - 1) + '))\n';
 							}];
 						} else if ('*' === expr) {
 							return [function (input, ctx) {
-								return input + '\nfor(var i' + lv + ' in $' + (lv - 1) + '){\n' + 'if($' + (lv - 1) + '.hasOwnProperty(i' + lv + ')){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+								return input + '\nvar $$' + (lv - 1) + ';\n' + '\nif(isArray($' + (lv - 1) + ')){\n' + '$$' + (lv - 1) + ' = range($' + (lv - 1) + '.length);' + '\n}else{\n' + '$$' + (lv - 1) + ' = [];' + '\nfor(var k' + lv + ' in $' + (lv - 1) + '){\n' + '\nif(hasOwnProperty.call($' + (lv - 1) + ',k' + lv + ')){\n' + '$$' + (lv - 1) + '.push(k' + lv + ');\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i' + lv + ' = 0;i' + lv + ' < $$' + (lv - 1) + '.length;i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = i' + lv + ';\n');
+								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = i' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n';
 							}];
 						} else if (/^\d+(,\d+)*$/.test(expr)) {
 							return [function (input, ctx) {
 								return input + '\nvar k' + lv + ' = [' + expr + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
+								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n';
 							}];
 						} else if (/^\d+(:\d+){0,2}$/.test(expr)) {
 							return [function (input, ctx) {
@@ -20501,34 +20494,34 @@
 								}));
 								return input + '\nvar k' + lv + ' = [' + indexes.join(', ') + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
+								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n';
 							}];
 						} else if (/^\?\(.*\)$/.test(expr)) {
 							return [function (input, ctx) {
 								return input + '\nfor(var i' + lv + ' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i' + lv + '++){\n' + 'if(' + expr.substring(1).replace(/@/g, '$' + (lv - 1) + '[i' + lv + ']') + '){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = i' + lv + ';\n');
+								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = i' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n' + '\n}\n';
 							}];
 						} else if (/^\(.*\)$/.test(expr)) {
 							return [function (input, ctx) {
 								return input + 'var k' + lv + ' = ' + expr.replace(/@/g, '$' + (lv - 1)) + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '],' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + ';\n');
+								}).join(', ') + '],' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '';
 							}];
 						} else if (/^\[.*\]$/.test(expr)) {
 							return [function (input, ctx) {
 								var key = expr.substring(1, expr.length - 1);
 								return input + 'var k' + lv + ' = ' + key + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + expr + ';\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '], ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : '\nif($' + lv + ' !== (void 0)){' + 'var pwd' + lv + ' = k' + lv + ';\n');
+								}).join(', ') + '], ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '';
+								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '';
 							}];
 						} else {
 							throw new Error('unexpected expression: ' + expr + '');
@@ -20619,6 +20612,26 @@
 
 /***/ },
 /* 166 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	exports.__esModule = true;
+	var visibilityFilters = {
+	  all: function all() {
+	    return true;
+	  },
+	  active: function active(todo) {
+	    return !todo.completed;
+	  },
+	  completed: function completed(todo) {
+	    return todo.completed;
+	  }
+	};
+	exports.visibilityFilters = visibilityFilters;
+
+/***/ },
+/* 167 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20635,23 +20648,13 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _TodoItem = __webpack_require__(167);
+	var _TodoItem = __webpack_require__(168);
 
 	var _TodoItem2 = _interopRequireDefault(_TodoItem);
 
 	var _actions = __webpack_require__(163);
 
-	var filters = {
-	  all: function all() {
-	    return true;
-	  },
-	  active: function active(todo) {
-	    return !todo.completed;
-	  },
-	  completed: function completed(todo) {
-	    return todo.completed;
-	  }
-	};
+	var _constants = __webpack_require__(166);
 
 	var MainSection = (function (_Component) {
 	  _inherits(MainSection, _Component);
@@ -20675,7 +20678,7 @@
 	    if (allTodos.length < 1) {
 	      return null;
 	    }
-	    var predict = filters[visibility];
+	    var predict = _constants.visibilityFilters[visibility] || _constants.visibilityFilters['all'];
 	    return _react2['default'].createElement(
 	      'section',
 	      { className: 'main' },
@@ -20709,7 +20712,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 167 */
+/* 168 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20726,7 +20729,7 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _classnames = __webpack_require__(168);
+	var _classnames = __webpack_require__(169);
 
 	var _classnames2 = _interopRequireDefault(_classnames);
 
@@ -20815,7 +20818,7 @@
 	module.exports = exports['default'];
 
 /***/ },
-/* 168 */
+/* 169 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -20870,7 +20873,7 @@
 	})();
 
 /***/ },
-/* 169 */
+/* 170 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20887,11 +20890,15 @@
 
 	var _react2 = _interopRequireDefault(_react);
 
-	var _classnames = __webpack_require__(168);
+	var _classnames = __webpack_require__(169);
 
 	var _classnames2 = _interopRequireDefault(_classnames);
 
 	var _actions = __webpack_require__(163);
+
+	function onHashChange() {
+	  _actions.switchFilter(window.location.hash.replace(/^#/, ''));
+	}
 
 	var Footer = (function (_Component) {
 	  _inherits(Footer, _Component);
@@ -20905,6 +20912,14 @@
 
 	  Footer.prototype._onClearCompletedClick = function _onClearCompletedClick() {
 	    _actions.destroyCompleted();
+	  };
+
+	  Footer.prototype.componentDidMount = function componentDidMount() {
+	    window.addEventListener('hashchange', onHashChange);
+	  };
+
+	  Footer.prototype.componentWillUnmount = function componentWillUnmount() {
+	    window.removeEventListener('hashchange', onHashChange);
 	  };
 
 	  Footer.prototype.render = function render() {
@@ -20943,9 +20958,7 @@
 	          null,
 	          _react2['default'].createElement(
 	            'a',
-	            { href: '#/all', className: _classnames2['default']({ selected: visibility === 'all' }), onClick: function (e) {
-	                return _actions.switchFilter('all');
-	              } },
+	            { href: '#all', className: _classnames2['default']({ selected: visibility === 'all' }) },
 	            'All'
 	          )
 	        ),
@@ -20954,9 +20967,7 @@
 	          null,
 	          _react2['default'].createElement(
 	            'a',
-	            { href: '#/active', className: _classnames2['default']({ selected: visibility === 'active' }), onClick: function (e) {
-	                return _actions.switchFilter('active');
-	              } },
+	            { href: '#active', className: _classnames2['default']({ selected: visibility === 'active' }) },
 	            'Active'
 	          )
 	        ),
@@ -20965,9 +20976,7 @@
 	          null,
 	          _react2['default'].createElement(
 	            'a',
-	            { href: '#/completed', className: _classnames2['default']({ selected: visibility === 'completed' }), onClick: function (e) {
-	                return _actions.switchFilter('completed');
-	              } },
+	            { href: '#completed', className: _classnames2['default']({ selected: visibility === 'completed' }) },
 	            'Completed'
 	          )
 	        )

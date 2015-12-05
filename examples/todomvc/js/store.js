@@ -1,22 +1,15 @@
 import { createObservableState } from 'realloc'
+import {visibilityFilters} from './constants'
 
+let visibility = window.location.hash.replace(/^#/,'')
+if(Object.keys(visibilityFilters).indexOf(visibility) == -1){
+  visibility = 'all'
+  window.location.hash = '#all'
+}
 
 let initialState = {
   todos:[],
-  visibility:'all'
+  visibility:window.location.hash?window.location.hash.replace(/^#/,''):'all'
 }
-// var localStorage
-// if(localStorage){
-//   let cache = localStorage.getItem('todoapp')
-//   if(cache){
-//     initialState = JSON.parse(cache)
-//   }
-// }
 
-const store = createObservableState(initialState)
-export default store
-
-store.subscribe((a) => {
-  // console.log(a.todos.map((a) => a.completed))
-  // localStorage.setItem('todoapp', JSON.stringify(a))
-})
+export default createObservableState(initialState)
