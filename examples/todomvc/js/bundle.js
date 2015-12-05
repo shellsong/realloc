@@ -19904,49 +19904,49 @@
 
 	var _store = __webpack_require__(164);
 
-	var createTodo = _store.createAction('$.todos[(@.length)]', function (text, _, res) {
+	var createTodo = _store.createAction('$.todos[(@.length)]', function (text, _, done) {
 	  if (text === undefined) text = '';
 
 	  var value = text.trim();
 	  if (value) {
-	    res({
+	    return {
 	      id: getNewId(),
 	      text: value,
 	      completed: false
-	    });
+	    };
 	  }
 	});
 	exports.createTodo = createTodo;
-	var toggleTodo = _store.createAction('$.todos[?(@ === {[0]})].completed', function (todo, currentComplete, res) {
-	  return res(!currentComplete);
+	var toggleTodo = _store.createAction('$.todos[?(@ === {[0]})].completed', function (todo, currentComplete, done) {
+	  return !currentComplete;
 	});
 	exports.toggleTodo = toggleTodo;
-	var updateTodo = _store.createAction('$.todos[?(@ === {[0]})].text', function (todo, text, currentText, res) {
-	  return res(text);
+	var updateTodo = _store.createAction('$.todos[?(@ === {[0]})].text', function (todo, text, currentText, done) {
+	  return text;
 	});
 	exports.updateTodo = updateTodo;
-	var destroyTodo = _store.createAction('$.todos', function (todo, todos, res) {
-	  return res(todos.filter(function (t) {
+	var destroyTodo = _store.createAction('$.todos', function (todo, todos, done) {
+	  return todos.filter(function (t) {
 	    return todo !== t;
-	  }));
+	  });
 	});
 	exports.destroyTodo = destroyTodo;
-	var destroyCompleted = _store.createAction('$.todos', function (todos, res) {
-	  return res(todos.filter(function (todo) {
+	var destroyCompleted = _store.createAction('$.todos', function (todos, done) {
+	  return todos.filter(function (todo) {
 	    return !todo.completed;
-	  }));
+	  });
 	});
 	exports.destroyCompleted = destroyCompleted;
 	var activeTodos = _store.createGetter('$.todos[?(!@.completed)]');
-	var toggleAllCompletedAction = _store.createAction('$.todos.*.completed', function (completed, _, res) {
-	  res(completed);
+	var toggleAllCompletedAction = _store.createAction('$.todos.*.completed', function (completed, _, done) {
+	  return completed;
 	});
 	var toggleAllCompleted = function toggleAllCompleted() {
 	  toggleAllCompletedAction(activeTodos().length > 0);
 	};
 	exports.toggleAllCompleted = toggleAllCompleted;
-	var switchFilter = _store.createAction('$.visibility', function (newKey, oldKey, res) {
-	  return res(newKey);
+	var switchFilter = _store.createAction('$.visibility', function (newKey, oldKey, done) {
+	  return newKey;
 	});
 
 	exports.switchFilter = switchFilter;
@@ -20175,6 +20175,28 @@
 				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
 
 				function actionCreatorFactory(stateGetter, collect) {
+					// const createActions = (...actions) => {
+					//   actions.map((action) => {
+					//     const options = Object.assign({deps:[]}, action.options)
+					//     const compiler = new Compiler(action.keyPath)
+					//     const matcher = compiler.createMatcher()
+					//     return (...payloads) => {
+					//
+					//     }
+					//   })
+					//   return (...payloads) => {
+					//
+					//   }
+					// }
+					// const createAction = (keyPath, callback, options) => createActions({
+					//   keyPath,
+					//   callback,
+					//   options
+					// })
+					// return {
+					//   createAction,
+					//   createActions
+
 					return function (keyPath, fn, opts) {
 						var options = Object.assign({ deps: [] }, opts);
 						var compiler = new _JSONPathCompiler2['default'](keyPath);
@@ -20185,31 +20207,71 @@
 							}
 
 							var $ = stateGetter();
-							return matcher($, payloads).map(function (result) {
-								//TODO collect之后应该clone新的state，循环使用，减少collect
-								var $ = stateGetter();
+							var value = matcher($, payloads).reduce(function (accValue, result) {
 								var pwd = result.pwd.slice(1);
-								var setter = function setter(newValue) {
-									var oldCur = $;
-									var newCur = _utils.clone($);
-									var cur = newCur;
+								var set = function set(newValue) {
+									var $old = accValue.$;
+									var oldCur = $old;
+									var $new = _utils.clone(accValue.$);
+									var newCur = $new;
 									pwd.forEach(function (key) {
 										if (key !== null) {
-											cur[key] = _utils.clone(oldCur[key]);
-											cur = cur[key];
+											newCur[key] = _utils.clone(oldCur[key]);
+											newCur = newCur[key];
 											oldCur = oldCur[key];
 										}
 									});
 									if (result.name !== null) {
-										cur[result.name] = newValue;
-										collect(newCur, result.pwd, result.name);
+										newCur[result.name] = newValue;
 									} else {
-										collect(newValue, result.pwd);
+										$new = newValue;
 									}
+									return $new;
 								};
-								var args = payloads.concat([result.value, setter]);
-								return fn.apply(result, args);
+								var done = function done(newValue) {};
+								var args = payloads.concat([result.value, done]);
+								var newValue = fn.apply(result, args);
+								if (newValue !== undefined) {
+									return {
+										$: set(newValue),
+										results: accValue.results.concat(result)
+									};
+								} else {
+									return accValue;
+								}
+							}, {
+								$: $,
+								results: []
 							});
+							if (value.$ !== $) {
+								collect(value.$, value.results);
+							}
+							return value;
+							// .map((result) => {
+							//   //TODO collect之后应该clone新的state，循环使用，减少collect
+							//   let $ = stateGetter()
+							//   let pwd = result.pwd.slice(1)
+							//   const setter = (newValue) => {
+							//     let oldCur = $
+							//     let newCur = clone($)
+							//     let cur = newCur
+							//     pwd.forEach((key) => {
+							//       if(key !== null){
+							//         cur[key] = clone(oldCur[key])
+							//         cur = cur[key]
+							//         oldCur = oldCur[key]
+							//       }
+							//     })
+							//     if(result.name !== null){
+							//       cur[result.name] = newValue
+							//       collect(newCur, result.pwd, result.name)
+							//     }else{
+							//       collect(newValue, result.pwd)
+							//     }
+							//   }
+							//   const args = payloads.concat([result.value, setter])
+							//   return fn.apply(result, args)
+							// })
 						};
 					};
 				}
@@ -20608,7 +20670,8 @@
 	});
 	;
 	//# sourceMappingURL=index.js.map
-	/***/ /***/ /***/ /***/ /***/ /***/ /***/
+	/***/ /***/ /***/ /***/ // }
+	/***/ /***/ /***/
 
 /***/ },
 /* 166 */

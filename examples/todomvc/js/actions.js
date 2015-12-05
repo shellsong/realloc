@@ -2,46 +2,44 @@ import { createAction, createGetter } from './store'
 
 export const createTodo = createAction(
   '$.todos[(@.length)]',
-  (text = '' , _, res) => {
+  (text = '' , _, done) => {
     let value = text.trim()
     if(value){
-      res({
+      return {
         id:getNewId(),
         text:value,
         completed:false
-      })
+      }
     }
   }
 )
 export const toggleTodo = createAction(
   '$.todos[?(@ === {[0]})].completed',
-  (todo, currentComplete, res) => res(!currentComplete)
+  (todo, currentComplete, done) => !currentComplete
 )
 export const updateTodo = createAction(
   '$.todos[?(@ === {[0]})].text',
-  (todo, text, currentText, res) => res(text)
+  (todo, text, currentText, done) => text
 )
 export const destroyTodo = createAction(
   '$.todos',
-  (todo, todos, res) => res(todos.filter((t) => todo !== t))
+  (todo, todos, done) => todos.filter((t) => todo !== t)
 )
 export const destroyCompleted = createAction(
   '$.todos',
-  (todos, res) => res(todos.filter((todo) => !todo.completed))
+  (todos, done) => todos.filter((todo) => !todo.completed)
 )
 const activeTodos = createGetter('$.todos[?(!@.completed)]')
 const toggleAllCompletedAction = createAction(
   '$.todos.*.completed',
-  (completed, _, res) => {
-    res(completed)
-  }
+  (completed, _, done) => completed
 )
 export const toggleAllCompleted = () => {
   toggleAllCompletedAction(activeTodos().length > 0)
 }
 export const switchFilter = createAction(
   '$.visibility',
-  (newKey, oldKey, res) => res(newKey)
+  (newKey, oldKey, done) => newKey
 )
 
 function getNewId(){

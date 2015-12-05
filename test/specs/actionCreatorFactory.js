@@ -11,13 +11,13 @@ describe('create actionCreator', () => {
     }
 
     let actionCreator = actionCreatorFactory(() => obj.state, setterSpy)
-    let action = actionCreator('$.a',(b, res) => {
-      res({b:2})
-      actionFnSpy(b, res)
+    let action = actionCreator('$.a',(b, done) => {
+      actionFnSpy(b, done)
+      return {b:2}
     })
     action();
     expect(actionFnSpy).toHaveBeenCalledWith(propsOfA, jasmine.any(Function));
-    expect(setterSpy).toHaveBeenCalledWith({a:{b:2}},['$'],'a');
+    expect(setterSpy).toHaveBeenCalledWith({a:{b:2}},[{pwd:['$'],name:'a',value:{b:1}}]);
   })
   it('deep update', () => {
     var propsOfA = {b:{c:1},d:{e:2}}
@@ -34,7 +34,7 @@ describe('create actionCreator', () => {
 
     let actionCreator = actionCreatorFactory(() => obj.state, setterSpy)
     let action = actionCreator('$.a.{[0]}.{[1]}', (k1, k2, c, res) => {
-      res(2)
+      return 2
     })
     action('b','c');
     expect(setterSpy).toHaveBeenCalled();

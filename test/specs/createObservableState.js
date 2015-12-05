@@ -11,7 +11,7 @@ describe('observable state', () => {
     let callback0 = jasmine.createSpy('subscribeCallback0')
     let callback1 = jasmine.createSpy('subscribeCallback1')
     let {createAction, subscribe} = createObservableState()
-    let action = createAction('$.a', (_, res) => res(1))
+    let action = createAction('$.a', (_, res) => 1)
     let unsubscribe0 = subscribe(callback0)
     let unsubscribe1 = subscribe(callback1)
     action()
