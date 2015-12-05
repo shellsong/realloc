@@ -1,4 +1,5 @@
 language: node_js
+script: npm run travis-test
 node_js:
   - "5.1"
   - "4.2"
