@@ -7,7 +7,7 @@ describe('observable state', () => {
   it('without initial value', () => {
     expect(createObservableState().getState()).toEqual({})
   })
-  it('subscribe and unsubscribe', (done) => {
+  it('subscribe and unsubscribe', () => {
     let callback0 = jasmine.createSpy('subscribeCallback0')
     let callback1 = jasmine.createSpy('subscribeCallback1')
     let {createAction, subscribe} = createObservableState()
@@ -16,11 +16,8 @@ describe('observable state', () => {
     let unsubscribe1 = subscribe(callback1)
     action()
     unsubscribe1()
-    setTimeout(() => {
-      expect(callback0).toHaveBeenCalledWith({a:1}, {})
-      expect(callback1).not.toHaveBeenCalled()
-      done()
-    },1)
+    expect(callback0).toHaveBeenCalledWith({a:1}, {}, jasmine.any(Array))
+    expect(callback1).toHaveBeenCalledWith({a:1}, {}, jasmine.any(Array))
   })
   it('create a state getter', () => {
     let source = {

@@ -21,17 +21,10 @@ export default function createObservableState(initialState = {}, options = {}){
       return matcher(currentState.$, args).map((v) => v.value)
     };
   }
-  let triggerFlag = false
-  const createAction = actionCreatorFactory(() => currentState.$, (nextState, keyPath) => {
+  const createAction = actionCreatorFactory(() => currentState.$, (nextState, results) => {
     let prevState = currentState.$
     currentState.$ = nextState
-    if(triggerFlag === false){
-      triggerFlag = true
-      setTimeout(() => {
-        subscribers.forEach((cb) => cb(currentState.$, prevState))
-        triggerFlag = false
-      }, 0)
-    }
+    subscribers.forEach((cb) => cb(currentState.$, prevState, results))
   })
   return {
     getState,
