@@ -109,9 +109,10 @@ export default class Compiler {
             'var $'+lv+' = recur;\n' +
             '\nif(isPlainObject($'+lv+')){\n'+
             (isLast?(
+            '\nvar matchesPwd = ['+range(0, lv - 1).map((i) => 'pwd' + i).join(', ')+'].concat(pwd);\n'+
             'matches.push({' +
-              'pwd: ['+range(0, lv - 1).map((i) => 'pwd' + i).join(', ')+'].concat(pwd),' +
-              'name: key,'+
+              'pwd: key === null ? matchesPwd.slice(0, matchesPwd.length - 1) : matchesPwd,' +
+              'name: key === null ? pwd[pwd.length - 1] : key,'+
               'value: $' + lv +
             '});\n'
             ):(
