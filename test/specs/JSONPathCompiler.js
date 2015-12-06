@@ -40,10 +40,10 @@ describe('parse json path', () => {
     expect(parseJSONPath('$..book[?(@.price<10)]')).toEqual(['$','..','["book"]','?(@.price<10)'])
   })
   it('$.store.{book}[?(@.price<{a.b})]', () => {
-    expect(parseJSONPath('$.store.{book}[?(@.price<{a.b})]')).toEqual(['$','["store"]','[{book}]','?(@.price<{a.b})'])
+    expect(parseJSONPath('$.store.{book}[?(@.price<{a.b})]')).toEqual(['$','["store"]','[{["book"]}]','?(@.price<{["a"]["b"]})'])
   })
-  it('$.store.{book}.{[0].a}', () => {
-    expect(parseJSONPath('$.store.{book}.{[0].a}')).toEqual(['$','["store"]','[{book}]','[{[0].a}]'])
+  it('$.store.{book}.{0.a}', () => {
+    expect(parseJSONPath('$.store.{book}.{0.a}')).toEqual(['$','["store"]','[{["book"]}]','[{[0]["a"]}]'])
   })
 })
 var source = {
@@ -104,7 +104,7 @@ describe('create compiler', () => {
     })
   })
   it('only key with args', () => {
-    var compiler = new Compiler('$.store.{key}.{[0].a}')
+    var compiler = new Compiler('$.store.{key}.{0.a}')
     var args = [{
       key:'book',
       a:1

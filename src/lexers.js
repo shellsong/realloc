@@ -6,9 +6,9 @@ export default [
     },
     (input, ctx) => {
       var {paramExprs} = ctx
-      return input.map((p) => p.replace(/^#\{(\d+)\}$/,($0, $1) => '[{' + paramExprs[$1] + '}]')
+      return input.map((p) => p.replace(/^#\{(\d+)\}$/,($0, $1) => '[{' + paramExprs[$1].split('.').map((i) => /^\d+$/.test(i)?'['+i+']':'["'+i+'"]').join('') + '}]')
                               //FIXME .replace(/(?=\w+)#\{(\d+)\}(?=\w+)/g,($0, $1) => '"+{' + paramExprs[$1] + '}+"')
-                              .replace(/#\{(\d+)\}/g, ($0, $1) => '{' + paramExprs[$1] + '}'))
+                              .replace(/#\{(\d+)\}/g, ($0, $1) => '{' + paramExprs[$1].split('.').map((i) => /^\d+$/.test(i)?'['+i+']':'["'+i+'"]').join('') + '}'))
     }
   ],
   [

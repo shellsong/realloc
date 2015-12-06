@@ -33,7 +33,7 @@ describe('create actionCreator', () => {
     }
 
     let actionCreator = actionCreatorFactory(() => obj.state, setterSpy)
-    let action = actionCreator('$.a.{[0]}.{[1]}', (k1, k2, c, res) => {
+    let action = actionCreator('$.a.{0}.{1}', (k1, k2, c, res) => {
       return 2
     })
     action('b','c');

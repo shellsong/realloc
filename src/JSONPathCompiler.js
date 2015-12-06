@@ -28,13 +28,13 @@ export default class Compiler {
     }
     this.exprArray = exprs.map((lex) => {
       return lex.replace(/\{([^\{]*)\}/g, ($0, $1) => {
-        return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0].') + $1 + ''
+        return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0]') + $1 + ''
       })
     })
   }
   createMatcher(){
     let lastIndex = this.exprArray.length - 1
-    let body = stackProcess("", this.exprArray.map((expr, i) => {
+    let body = stackProcess('', this.exprArray.map((expr, i) => {
       if(i === 0){
         return [
           (input, ctx) => {
