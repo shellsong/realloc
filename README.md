@@ -10,13 +10,13 @@ npm i -S realloc
 ```
 ## Getting Started
 ```javascript
-import { createObservableStore } from 'realloc'
+import { createObservableState } from 'realloc'
 //create a counter store
 const { 
   getState, 
   createAction, 
   subscribe 
-} = createObservableStore({
+} = createObservableState({
   count:0
 })
 // create a increment action for the store
