@@ -19917,11 +19917,11 @@
 	  }
 	});
 	exports.createTodo = createTodo;
-	var toggleTodo = _store.createAction('$.todos[?(@ === {[0]})].completed', function (todo, currentComplete, done) {
+	var toggleTodo = _store.createAction('$.todos[?(@ === {0})].completed', function (todo, currentComplete, done) {
 	  return !currentComplete;
 	});
 	exports.toggleTodo = toggleTodo;
-	var updateTodo = _store.createAction('$.todos[?(@ === {[0]})].text', function (todo, text, currentText, done) {
+	var updateTodo = _store.createAction('$.todos[?(@ === {0})].text', function (todo, text, currentText, done) {
 	  return text;
 	});
 	exports.updateTodo = updateTodo;
@@ -20293,7 +20293,7 @@
 					if (typeof obj !== 'object') {
 						return false;
 					}
-					if (obj.constructor && !hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf")) {
+					if (obj.constructor && !hasOwnProperty.call(obj.constructor.prototype, 'isPrototypeOf')) {
 						return false;
 					}
 					return true;
@@ -20420,9 +20420,7 @@
 					var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
 					var resultType = (options.resultType || 'value').toUpperCase();
-					var getResult = function getResult(v) {
-						return v;
-					};
+					var getResult = undefined;
 					if (resultType === 'VALUE') {
 						getResult = function (v) {
 							return v.value;
