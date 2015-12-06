@@ -10,8 +10,8 @@ describe('create actionCreator', () => {
       }
     }
 
-    let actionCreator = actionCreatorFactory(() => obj.state, setterSpy)
-    let action = actionCreator('$.a',(b, done) => {
+    const {createAction, createActions} = actionCreatorFactory(() => obj.state, setterSpy)
+    const action = createAction('$.a',(b, done) => {
       actionFnSpy(b, done)
       return {b:2}
     })
@@ -32,8 +32,8 @@ describe('create actionCreator', () => {
       }
     }
 
-    let actionCreator = actionCreatorFactory(() => obj.state, setterSpy)
-    let action = actionCreator('$.a.{0}.{1}', (k1, k2, c, res) => {
+    const {createAction, createActions} = actionCreatorFactory(() => obj.state, setterSpy)
+    const action = createAction('$.a.{0}.{1}', (k1, k2, c, res) => {
       return 2
     })
     action('b','c');

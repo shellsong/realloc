@@ -12,7 +12,7 @@ function JSONPath(source, expr,options = {}){
   if(resultType === 'VALUE'){
     getResult = (v) => v.value
   }else if(resultType === 'PATH'){
-    getResult = (v) => v.pwd.concat([v.name]).filter((v) => v !== null)
+    getResult = (v) => v.pwd.concat([v.name])
   }
   return ((new Compiler(expr)).createMatcher())(source).map(getResult)
 }
@@ -22,11 +22,8 @@ function parseJSONPath(expr){
 export default class Compiler {
   static JSONPath = JSONPath
   static parseJSONPath = parseJSONPath
-  constructor(exprs, notNormalized){
-    if(notNormalized !== false){
-      exprs = parseJSONPath(exprs)
-    }
-    this.exprArray = exprs.map((lex) => {
+  constructor(exprStr){
+    this.exprArray = parseJSONPath(exprStr).map((lex) => {
       return lex.replace(/\{([^\{]*)\}/g, ($0, $1) => {
         return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0]') + $1 + ''
       })
