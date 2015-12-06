@@ -1,6 +1,5 @@
 import { clone } from './utils'
 import Compiler from './JSONPathCompiler'
-
 export default function actionCreatorFactory(stateGetter, collect){
   // const createActions = (...actions) => {
   //   actions.map((action) => {
@@ -33,6 +32,9 @@ export default function actionCreatorFactory(stateGetter, collect){
       let value = matcher($, payloads).reduce((accValue, result) => {
         let pwd = result.pwd.slice(1)
         const set = (newValue) => {
+          if(result.name === null){
+            return newValue
+          }
           const $old = accValue.$
           let oldCur = $old
           let $new = clone(accValue.$)
@@ -44,15 +46,13 @@ export default function actionCreatorFactory(stateGetter, collect){
               oldCur = oldCur[key]
             }
           })
-          if(result.name !== null){
-            newCur[result.name] = newValue
-          }else{
-            $new = newValue
-          }
+          newCur[result.name] = newValue
           return $new
         }
         const done = (newValue) => {
           //TODO async set : check value, do collect
+          stateGetter()
+          set(newValue)
         }
         const args = payloads.concat([result.value, done])
         const newValue = fn.apply(result, args)

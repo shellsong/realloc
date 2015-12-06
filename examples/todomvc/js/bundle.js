@@ -20128,21 +20128,14 @@
 							});
 						};
 					}
-					var triggerFlag = false;
 					var createAction = _actionCreatorFactory2['default'](function () {
 						return currentState.$;
-					}, function (nextState, keyPath) {
+					}, function (nextState, results) {
 						var prevState = currentState.$;
 						currentState.$ = nextState;
-						if (triggerFlag === false) {
-							triggerFlag = true;
-							setTimeout(function () {
-								subscribers.forEach(function (cb) {
-									return cb(currentState.$, prevState);
-								});
-								triggerFlag = false;
-							}, 0);
-						}
+						subscribers.forEach(function (cb) {
+							return cb(currentState.$, prevState, results);
+						});
 					});
 					return {
 						getState: getState,
@@ -20173,6 +20166,12 @@
 				var _JSONPathCompiler = __webpack_require__(5);
 
 				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
+
+				function checkPWD(pwd) {
+					if (!pwd.length || pwd[0] !== '$') {
+						throw new Error('Impossible !');
+					}
+				}
 
 				function actionCreatorFactory(stateGetter, collect) {
 					// const createActions = (...actions) => {
@@ -20209,6 +20208,7 @@
 							var $ = stateGetter();
 							var value = matcher($, payloads).reduce(function (accValue, result) {
 								var pwd = result.pwd.slice(1);
+								if (result.name === null) {}
 								var set = function set(newValue) {
 									var $old = accValue.$;
 									var oldCur = $old;
@@ -20224,14 +20224,22 @@
 									if (result.name !== null) {
 										newCur[result.name] = newValue;
 									} else {
+										//FIXME 判断pwd.length 如果0，直接该$new,如果不是0，改最后一个pwd
+										if (pwd.length) {} else {
+											return newValue;
+										}
 										$new = newValue;
 									}
 									return $new;
 								};
-								var done = function done(newValue) {};
+								var done = function done(newValue) {
+									//TODO async set : check value, do collect
+									stateGetter();
+									set(newValue);
+								};
 								var args = payloads.concat([result.value, done]);
 								var newValue = fn.apply(result, args);
-								if (newValue !== undefined) {
+								if (newValue !== void 0) {
 									return {
 										$: set(newValue),
 										results: accValue.results.concat(result)
@@ -20247,31 +20255,6 @@
 								collect(value.$, value.results);
 							}
 							return value;
-							// .map((result) => {
-							//   //TODO collect之后应该clone新的state，循环使用，减少collect
-							//   let $ = stateGetter()
-							//   let pwd = result.pwd.slice(1)
-							//   const setter = (newValue) => {
-							//     let oldCur = $
-							//     let newCur = clone($)
-							//     let cur = newCur
-							//     pwd.forEach((key) => {
-							//       if(key !== null){
-							//         cur[key] = clone(oldCur[key])
-							//         cur = cur[key]
-							//         oldCur = oldCur[key]
-							//       }
-							//     })
-							//     if(result.name !== null){
-							//       cur[result.name] = newValue
-							//       collect(newCur, result.pwd, result.name)
-							//     }else{
-							//       collect(newValue, result.pwd)
-							//     }
-							//   }
-							//   const args = payloads.concat([result.value, setter])
-							//   return fn.apply(result, args)
-							// })
 						};
 					};
 				}
@@ -20500,7 +20483,7 @@
 						var body = _utils.stackProcess("", this.exprArray.map(function (expr, i) {
 							if (i === 0) {
 								return [function (input, ctx) {
-									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [pwd0], ' + 'name: null, ' + 'value: $0' + '});\n' : '');
+									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [], ' + 'name: pwd0, ' + 'value: $0' + '});\n' : '');
 								}, function (input, ctx) {
 									return input + '\nreturn matches;';
 								}];
@@ -20527,19 +20510,19 @@
 					Compiler.prototype._parseExpr = function _parseExpr(expr, lv, isLast) {
 						if ('..' === expr) {
 							return [function (input, ctx) {
-								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, rootCur, pwd, key){\n' + 'pwd = pwd || [];\n' + 'key = key || null;\n' + 'visit(rootCur, key, pwd, breakFn);\n' + 'newPwd = key !== null ? pwd.concat(key) : pwd' + '\nif(stop === false && isPlainObject(rootCur)){\n' + '\nvar rootCurKeys;\n' + '\nif(isArray(rootCur)){\n' + 'rootCurKeys = range(rootCur.length);' + '\n}else{\n' + 'rootCurKeys = [];' + '\nfor(var k in rootCur){\n' + '\nif(hasOwnProperty.call(rootCur,k)){\n' + 'rootCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < rootCurKeys.length; i++){\n' + '\nif(isPlainObject(rootCur[i]) && stop === false){\n' + 'recurfn' + lv + '(visit, rootCur[i], newPwd, i);\n' + '}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv - 1).map(function (i) {
+								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, parentCur, pwd, key, isRoot){\n' + 'visit(parentCur, key, pwd, breakFn);\n' + 'var newPwd = pwd.concat(key);\n' + '\nif(stop === false && typeof parentCur === "object"){\n' + '\nvar parentCurKeys;\n' + '\nif(isArray(parentCur)){\n' + 'parentCurKeys = range(parentCur.length);' + '\n}else{\n' + 'parentCurKeys = [];' + '\nfor(var k in parentCur){\n' + '\nif(hasOwnProperty.call(parentCur,k)){\n' + 'parentCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < parentCurKeys.length; i++){\n' + '\nif(stop === false ){\n' + 'recurfn' + lv + '(visit, parentCur[parentCurKeys[i]], newPwd, i);' + '\n}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + '\nif(isPlainObject($' + lv + ')){\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv - 1).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '].concat(pwd),' + 'name: key,' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = key;\n');
+								}).join(', ') + '].concat(pwd),' + 'name: key,' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = key;\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n},$' + (lv - 1) + '))\n';
+								return input + '\n}\n' + '\n},$' + (lv - 1) + ', [], pwd' + (lv - 1) + ', true))\n';
 							}];
 						} else if ('*' === expr) {
 							return [function (input, ctx) {
-								return input + '\nvar $$' + (lv - 1) + ';\n' + '\nif(isArray($' + (lv - 1) + ')){\n' + '$$' + (lv - 1) + ' = range($' + (lv - 1) + '.length);' + '\n}else{\n' + '$$' + (lv - 1) + ' = [];' + '\nfor(var k' + lv + ' in $' + (lv - 1) + '){\n' + '\nif(hasOwnProperty.call($' + (lv - 1) + ',k' + lv + ')){\n' + '$$' + (lv - 1) + '.push(k' + lv + ');\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i' + lv + ' = 0;i' + lv + ' < $$' + (lv - 1) + '.length;i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
+								return input + '\nvar $$' + (lv - 1) + ';\n' + '\nif(isArray($' + (lv - 1) + ')){\n' + '$$' + (lv - 1) + ' = range($' + (lv - 1) + '.length);' + '\n}else{\n' + '$$' + (lv - 1) + ' = [];' + '\nfor(var k' + lv + ' in $' + (lv - 1) + '){\n' + '\nif(hasOwnProperty.call($' + (lv - 1) + ',k' + lv + ')){\n' + '$$' + (lv - 1) + '.push(k' + lv + ');\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i' + lv + ' = 0;i' + lv + ' < $$' + (lv - 1) + '.length;i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[$$' + (lv - 1) + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv).map(function (i) {
 									return 'pwd' + i;
 								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = i' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n';
+								return input + (isLast ? '' : '\n}\n') + '\n}\n';
 							}];
 						} else if (/^\d+(,\d+)*$/.test(expr)) {
 							return [function (input, ctx) {
@@ -20547,7 +20530,7 @@
 									return 'pwd' + i;
 								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n';
+								return input + (isLast ? '' : '\n}\n') + '\n}\n';
 							}];
 						} else if (/^\d+(:\d+){0,2}$/.test(expr)) {
 							return [function (input, ctx) {
@@ -20558,7 +20541,7 @@
 									return 'pwd' + i;
 								}).join(', ') + '],' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + '[i' + lv + '];\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n';
+								return input + (isLast ? '' : '\n}\n') + '\n}\n';
 							}];
 						} else if (/^\?\(.*\)$/.test(expr)) {
 							return [function (input, ctx) {
@@ -20566,7 +20549,7 @@
 									return 'pwd' + i;
 								}).join(', ') + '],' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = i' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '\n}\n' + '\n}\n';
+								return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
 							}];
 						} else if (/^\(.*\)$/.test(expr)) {
 							return [function (input, ctx) {
@@ -20574,7 +20557,7 @@
 									return 'pwd' + i;
 								}).join(', ') + '],' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '';
+								return input + (isLast ? '' : '\n}\n') + '';
 							}];
 						} else if (/^\[.*\]$/.test(expr)) {
 							return [function (input, ctx) {
@@ -20583,7 +20566,7 @@
 									return 'pwd' + i;
 								}).join(', ') + '], ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = k' + lv + ';\n');
 							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}else{throw new Error()}\n') + '';
+								return input + (isLast ? '' : '\n}\n') + '';
 							}];
 						} else {
 							throw new Error('unexpected expression: ' + expr + '');

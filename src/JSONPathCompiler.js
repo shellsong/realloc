@@ -50,7 +50,17 @@ export default class Compiler {
           },
           (input, ctx) => {
             return input +
-                  '\nreturn matches;'
+                  '\nvar newPwd0;\n'+
+                  '\nfor(var j = 0; j < matches.length; j ++){\n'+
+                    '\nnewPwd0 = [];'+
+                    '\nfor(var jj = 0; jj < matches[j].pwd.length; jj ++){\n'+
+                        '\nif(matches[j].pwd[jj] !== null){\n' +
+                            'newPwd0.push(matches[j].pwd[jj]);'+
+                        '\n}\n'+
+                    '\n}\n'+
+                    '\nmatches[j].pwd = newPwd0;'+
+                  '\n}\n'+
+                  'return matches;'
           }
         ]
       }else{
@@ -73,34 +83,31 @@ export default class Compiler {
           return input +
           '\n((function(){\n' +
               'var stop = false;var breakFn = function(){stop = true};\n' +
-            '\nreturn function recurfn'+lv+'(visit, rootCur, pwd, key){\n' +
-                'pwd = pwd || [];\n' +
-                'key = key || null;\n' +
-                'visit(rootCur, key, pwd, breakFn);\n' +
-                'newPwd = key !== null ? pwd.concat(key) : pwd' +
-              '\nif(stop === false && isPlainObject(rootCur)){\n' +
-
-                '\nvar rootCurKeys;\n'+
-                '\nif(isArray(rootCur)){\n'+
-                  'rootCurKeys = range(rootCur.length);'+
+            '\nreturn function recurfn'+lv+'(visit, parentCur, pwd, key, isRoot){\n' +
+                'visit(parentCur, key, pwd, breakFn);\n' +
+                'var newPwd = key !== null ? pwd.concat(key) : pwd;\n' +
+              '\nif(stop === false && typeof parentCur === "object"){\n' +
+                '\nvar parentCurKeys;\n'+
+                '\nif(isArray(parentCur)){\n'+
+                  'parentCurKeys = range(parentCur.length);'+
                 '\n}else{\n'+
-                  'rootCurKeys = [];'+
-                  '\nfor(var k in rootCur){\n'+
-                    '\nif(hasOwnProperty.call(rootCur,k)){\n'+
-                      'rootCurKeys.push(k);\n'+
+                  'parentCurKeys = [];'+
+                  '\nfor(var k in parentCur){\n'+
+                    '\nif(hasOwnProperty.call(parentCur,k)){\n'+
+                      'parentCurKeys.push(k);\n'+
                     '\n}\n'+
                   '\n}\n'+
                 '\n}\n'+
-
-                '\nfor(var i = 0; i < rootCurKeys.length; i++){\n' +
-                  '\nif(isPlainObject(rootCur[i]) && stop === false){\n' +
-                    'recurfn'+lv+'(visit, rootCur[i], newPwd, i);\n' +
-                  '}\n' +
+                '\nfor(var i = 0; i < parentCurKeys.length; i++){\n' +
+                  '\nif(stop === false ){\n' +
+                    'recurfn'+lv+'(visit, parentCur[parentCurKeys[i]], newPwd, parentCurKeys[i]);' +
+                  '\n}\n' +
                 '}\n' +
               '}\n' +
             '}\n' +
           '}())(function(recur, key, pwd, breakFn){\n' +
             'var $'+lv+' = recur;\n' +
+            '\nif(isPlainObject($'+lv+')){\n'+
             (isLast?(
             'matches.push({' +
               'pwd: ['+range(0, lv - 1).map((i) => 'pwd' + i).join(', ')+'].concat(pwd),' +
@@ -108,14 +115,13 @@ export default class Compiler {
               'value: $' + lv +
             '});\n'
             ):(
-            '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
             'var pwd' + lv + ' = key;\n'
             ))
         },
         (input, ctx) => {
           return input +
-              (isLast?'':'\n}else{throw new Error()}\n')+
-            '\n},$'+(lv - 1)+'))\n'
+              ('\n}\n')+
+            '\n},$'+(lv - 1)+', [], null, true))\n'
         }
       ]
     }else if('*' === expr){
@@ -134,7 +140,7 @@ export default class Compiler {
                   '\n}\n'+
                 '\n}\n'+
                 '\nfor(var i'+lv+' = 0;i'+lv+' < $$'+(lv-1)+'.length;i'+lv+'++){\n'+
-                    'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
+                    'var $' + lv + ' = $'+(lv - 1)+'[$$'+(lv-1)+'[i'+lv+']];\n' +
                     (isLast?(
                     'matches.push({' +
                       'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
@@ -148,7 +154,7 @@ export default class Compiler {
         },
         (input, ctx) => {
           return input +
-                  (isLast?'':'\n}else{throw new Error()}\n')+
+                  (isLast?'':'\n}\n')+
                 '\n}\n'
         }
       ]
@@ -172,7 +178,7 @@ export default class Compiler {
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}else{throw new Error()}\n')+
+                (isLast?'':'\n}\n')+
                 '\n}\n'
         }
       ]
@@ -197,7 +203,7 @@ export default class Compiler {
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}else{throw new Error()}\n')+
+                (isLast?'':'\n}\n')+
                 '\n}\n'
         }
       ]
@@ -223,7 +229,7 @@ export default class Compiler {
         },
         (input, ctx) => {
           return input +
-                  (isLast?'':'\n}else{throw new Error()}\n')+
+                  (isLast?'':'\n}\n')+
                   '\n}\n'+
                 '\n}\n'
         }
@@ -247,7 +253,7 @@ export default class Compiler {
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}else{throw new Error()}\n')+
+                (isLast?'':'\n}\n')+
                 ''
         }
       ]
@@ -271,7 +277,7 @@ export default class Compiler {
         },
         (input, ctx) => {
           return input +
-                (isLast?'':'\n}else{throw new Error()}\n')+
+                (isLast?'':'\n}\n')+
                 ''
         }
       ]

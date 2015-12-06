@@ -2,7 +2,7 @@ import {getState, createAction} from '../../js/store'
 import {createTodo, toggleTodo, toggleAllCompleted} from '../../js/actions'
 const resetTodoApp = createAction('$', (_, done) => ({
   todos:[],
-  areAllComplete:true
+  visibility:'all'
 }))
 describe('todoapp', () => {
   beforeEach(() => {
