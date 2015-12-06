@@ -9,13 +9,15 @@ Realloc
 npm i -S realloc
 ```
 ## Getting Started
+
+### Tutorial
 ```javascript
 import { createObservableState } from 'realloc'
 //create a counter store
-const { 
-  getState, 
-  createAction, 
-  subscribe 
+const {
+  getState,
+  createAction,
+  subscribe
 } = createObservableState({
   count:0
 })
@@ -29,7 +31,7 @@ const unsubscribe = subscribe((nextState, prevState) => {
 })
 // call the increment action
 incrementAction()
-// state of the store will change, 
+// state of the store will change,
 // => log: {count:1} {count:0}
 
 // call the increment action again
@@ -42,6 +44,96 @@ getState() // {count:2}
 decrementAction()
 // => log: {count:1} {count:2}
 
+// create a action that increment with params
+const incrementNumAction = createAction('$.count', (num, currentCount) => currentCount + num)
+
+incrementNumAction(5)
+// => log: {count:6} {count:1}
 ```
+### Using JSONPath
+```javascript
+import { createObservableState } from 'realloc'
+const initialState = {
+  "store": {
+    "book": [
+      {
+        "category": "reference",
+        "author": "Nigel Rees",
+        "title": "Sayings of the Century",
+        "price": 8.95
+      },
+      {
+        "category": "fiction",
+        "author": "Evelyn Waugh",
+        "title": "Sword of Honour",
+        "price": 12.99
+      },
+      {
+        "category": "fiction",
+        "author": "Herman Melville",
+        "title": "Moby Dick",
+        "isbn": "0-553-21311-3",
+        "price": 8.99
+      },
+      {
+        "category": "fiction",
+        "author": "J. R. R. Tolkien",
+        "title": "The Lord of the Rings",
+        "isbn": "0-395-19395-8",
+        "price": 22.99
+      }
+    ],
+    "bicycle": {
+      "color": "red",
+      "price": 19.95
+    }
+  }
+}
+const {
+  getState,
+  createAction,
+  createGetter,
+  subscribe
+} = createObservableState(initialState)
+const unsubscribe = subscribe((nextState, prevState) => {
+	console.log("log: ", nextState, prevState)
+})
+const getBookTitlesByPriceGTTen = createGetter('$.store.book[?(@.price > 10)].title')
+getBookByPriceGTTen()
+// => ["Sword of Honour", "The Lord of the Rings"]
 
+const updateBookCategoryWithPrice = createAction('$.store.book[?(@.price > {price})].category', (payload, currentCategory) => payload.text + currentCategory )
+updateBookCategoryWithPrice({
+  price:10,
+  text:'famous '
+})
+getState().store.book
 
+// => [{
+//     "category": "reference",
+//     "author": "Nigel Rees",
+//     "title": "Sayings of the Century",
+//     "price": 8.95
+//   },
+//   {
+//     "category": "famous fiction",
+//     "author": "Evelyn Waugh",
+//     "title": "Sword of Honour",
+//     "price": 12.99
+//   },
+//   {
+//     "category": "fiction",
+//     "author": "Herman Melville",
+//     "title": "Moby Dick",
+//     "isbn": "0-553-21311-3",
+//     "price": 8.99
+//   },
+//   {
+//     "category": "famous fiction",
+//     "author": "J. R. R. Tolkien",
+//     "title": "The Lord of the Rings",
+//     "isbn": "0-395-19395-8",
+//     "price": 22.99
+//   }]
+
+```
