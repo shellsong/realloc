@@ -14,11 +14,11 @@ export const createTodo = createAction(
   }
 )
 export const toggleTodo = createAction(
-  '$.todos[?(@ === {[0]})].completed',
+  '$.todos[?(@ === {0})].completed',
   (todo, currentComplete, done) => !currentComplete
 )
 export const updateTodo = createAction(
-  '$.todos[?(@ === {[0]})].text',
+  '$.todos[?(@ === {0})].text',
   (todo, text, currentText, done) => text
 )
 export const destroyTodo = createAction(

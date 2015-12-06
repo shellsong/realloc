@@ -8,7 +8,7 @@ import {
 import lexers from './lexers'
 function JSONPath(source, expr,options = {}){
   let resultType = (options.resultType||'value').toUpperCase()
-  let getResult = (v) => v;
+  let getResult
   if(resultType === 'VALUE'){
     getResult = (v) => v.value
   }else if(resultType === 'PATH'){

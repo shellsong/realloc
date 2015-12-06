@@ -10,6 +10,40 @@ npm i -S realloc
 ```
 ## Getting Started
 ```javascript
+import { createObservableStore } from 'realloc'
+//create a counter store
+const { 
+  getState, 
+  createAction, 
+  subscribe 
+} = createObservableStore({
+  count:0
+})
+// create a increment action for the store
+const incrementAction = createAction('$.count', (currentCount) => currentCount + 1)
+// create a decrement action for the store
+const decrementAction = createAction('$.count', (currentCount) => currentCount - 1)
+// set a subscriber for the store
+const unsubscribe = subscribe((nextState, prevState) => {
+	console.log("log: ", nextState, prevState)
+})
+// call the increment action
+incrementAction()
+// state of the store will change, 
+// => log: {count:1} {count:0}
+
+// call the increment action again
+incrementAction()
+// state of the store will change again
+// => log: {count:2} {count:1}
+getState() // {count:2}
+
+// call the decrement action
+decrementAction()
+// => log: {count:1} {count:2}
+
+```
+```javascript
 // store.js
 // import
 import { createObservableStore } from 'realloc'
@@ -64,7 +98,5 @@ class TodoApp extends Component {
 
 }
 ```
-## Todo List
 
-* unit tests
-* Examples &amp; Documents
+

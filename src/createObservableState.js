@@ -19,7 +19,7 @@ export default function createObservableState(initialState = {}, options = {}){
     const matcher = compiler.createMatcher()
     return (...args) => {
       return matcher(currentState.$, args).map((v) => v.value)
-    };
+    }
   }
   const createAction = actionCreatorFactory(() => currentState.$, (nextState, results) => {
     let prevState = currentState.$

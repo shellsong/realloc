@@ -20167,12 +20167,6 @@
 
 				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
 
-				function checkPWD(pwd) {
-					if (!pwd.length || pwd[0] !== '$') {
-						throw new Error('Impossible !');
-					}
-				}
-
 				function actionCreatorFactory(stateGetter, collect) {
 					// const createActions = (...actions) => {
 					//   actions.map((action) => {
@@ -20208,8 +20202,10 @@
 							var $ = stateGetter();
 							var value = matcher($, payloads).reduce(function (accValue, result) {
 								var pwd = result.pwd.slice(1);
-								if (result.name === null) {}
 								var set = function set(newValue) {
+									if (result.name === null) {
+										return newValue;
+									}
 									var $old = accValue.$;
 									var oldCur = $old;
 									var $new = _utils.clone(accValue.$);
@@ -20221,15 +20217,7 @@
 											oldCur = oldCur[key];
 										}
 									});
-									if (result.name !== null) {
-										newCur[result.name] = newValue;
-									} else {
-										//FIXME 判断pwd.length 如果0，直接该$new,如果不是0，改最后一个pwd
-										if (pwd.length) {} else {
-											return newValue;
-										}
-										$new = newValue;
-									}
+									newCur[result.name] = newValue;
 									return $new;
 								};
 								var done = function done(newValue) {
@@ -20471,7 +20459,7 @@
 						}
 						this.exprArray = exprs.map(function (lex) {
 							return lex.replace(/\{([^\{]*)\}/g, function ($0, $1) {
-								return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0].') + $1 + '';
+								return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0]') + $1 + '';
 							});
 						});
 					}
@@ -20480,12 +20468,12 @@
 						var _this = this;
 
 						var lastIndex = this.exprArray.length - 1;
-						var body = _utils.stackProcess("", this.exprArray.map(function (expr, i) {
+						var body = _utils.stackProcess('', this.exprArray.map(function (expr, i) {
 							if (i === 0) {
 								return [function (input, ctx) {
-									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [], ' + 'name: pwd0, ' + 'value: $0' + '});\n' : '');
+									return input + 'var matches = [], $0 = $, pwd0 = "$";\n' + (i === lastIndex ? 'matches.push({' + 'pwd: [pwd0], ' + 'name: null, ' + 'value: $0' + '});\n' : '');
 								}, function (input, ctx) {
-									return input + '\nreturn matches;';
+									return input + '\nvar newPwd0;\n' + '\nfor(var j = 0; j < matches.length; j ++){\n' + '\nnewPwd0 = [];' + '\nfor(var jj = 0; jj < matches[j].pwd.length; jj ++){\n' + '\nif(matches[j].pwd[jj] !== null){\n' + 'newPwd0.push(matches[j].pwd[jj]);' + '\n}\n' + '\n}\n' + '\nmatches[j].pwd = newPwd0;' + '\n}\n' + 'return matches;';
 								}];
 							} else {
 								return _this._parseExpr(expr, i, i === lastIndex);
@@ -20510,11 +20498,11 @@
 					Compiler.prototype._parseExpr = function _parseExpr(expr, lv, isLast) {
 						if ('..' === expr) {
 							return [function (input, ctx) {
-								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, parentCur, pwd, key, isRoot){\n' + 'visit(parentCur, key, pwd, breakFn);\n' + 'var newPwd = pwd.concat(key);\n' + '\nif(stop === false && typeof parentCur === "object"){\n' + '\nvar parentCurKeys;\n' + '\nif(isArray(parentCur)){\n' + 'parentCurKeys = range(parentCur.length);' + '\n}else{\n' + 'parentCurKeys = [];' + '\nfor(var k in parentCur){\n' + '\nif(hasOwnProperty.call(parentCur,k)){\n' + 'parentCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < parentCurKeys.length; i++){\n' + '\nif(stop === false ){\n' + 'recurfn' + lv + '(visit, parentCur[parentCurKeys[i]], newPwd, i);' + '\n}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + '\nif(isPlainObject($' + lv + ')){\n' + (isLast ? 'matches.push({' + 'pwd: [' + _utils.range(0, lv - 1).map(function (i) {
+								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, parentCur, pwd, key, isRoot){\n' + 'visit(parentCur, key, pwd, breakFn);\n' + 'var newPwd = key !== null ? pwd.concat(key) : pwd;\n' + '\nif(stop === false && typeof parentCur === "object"){\n' + '\nvar parentCurKeys;\n' + '\nif(isArray(parentCur)){\n' + 'parentCurKeys = range(parentCur.length);' + '\n}else{\n' + 'parentCurKeys = [];' + '\nfor(var k in parentCur){\n' + '\nif(hasOwnProperty.call(parentCur,k)){\n' + 'parentCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < parentCurKeys.length; i++){\n' + '\nif(stop === false ){\n' + 'recurfn' + lv + '(visit, parentCur[parentCurKeys[i]], newPwd, parentCurKeys[i]);' + '\n}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + '\nif(isPlainObject($' + lv + ')){\n' + (isLast ? '\nvar matchesPwd = [' + _utils.range(0, lv - 1).map(function (i) {
 									return 'pwd' + i;
-								}).join(', ') + '].concat(pwd),' + 'name: key,' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = key;\n');
+								}).join(', ') + '].concat(pwd);\n' + 'matches.push({' + 'pwd: key === null ? matchesPwd.slice(0, matchesPwd.length - 1) : matchesPwd,' + 'name: key === null ? pwd[pwd.length - 1] : key,' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = key;\n');
 							}, function (input, ctx) {
-								return input + '\n}\n' + '\n},$' + (lv - 1) + ', [], pwd' + (lv - 1) + ', true))\n';
+								return input + '\n}\n' + '\n},$' + (lv - 1) + ', [], null, true))\n';
 							}];
 						} else if ('*' === expr) {
 							return [function (input, ctx) {
@@ -20598,11 +20586,17 @@
 
 					return input.map(function (p) {
 						return p.replace(/^#\{(\d+)\}$/, function ($0, $1) {
-							return '[{' + paramExprs[$1] + '}]';
+							return '[{' + paramExprs[$1].split('.').map(function (i) {
+								return (/^\d+$/.test(i) ? '[' + i + ']' : '["' + i + '"]'
+								);
+							}).join('') + '}]';
 						})
 						//FIXME .replace(/(?=\w+)#\{(\d+)\}(?=\w+)/g,($0, $1) => '"+{' + paramExprs[$1] + '}+"')
 						.replace(/#\{(\d+)\}/g, function ($0, $1) {
-							return '{' + paramExprs[$1] + '}';
+							return '{' + paramExprs[$1].split('.').map(function (i) {
+								return (/^\d+$/.test(i) ? '[' + i + ']' : '["' + i + '"]'
+								);
+							}).join('') + '}';
 						});
 					});
 				}], [function (input, ctx) {
