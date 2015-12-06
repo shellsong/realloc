@@ -1,6 +1,6 @@
 {
   "name": "realloc",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Observable and Immutable State Manager Base On JSONPath For Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
