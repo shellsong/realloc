@@ -2,7 +2,7 @@ import { createAction, createGetter } from './store'
 
 export const createTodo = createAction(
   '$.todos[(@.length)]',
-  (text = '' , _, done) => {
+  (text = '' , _) => {
     let value = text.trim()
     if(value){
       return {
@@ -15,31 +15,31 @@ export const createTodo = createAction(
 )
 export const toggleTodo = createAction(
   '$.todos[?(@ === {0})].completed',
-  (todo, currentComplete, done) => !currentComplete
+  (todo, currentComplete) => !currentComplete
 )
 export const updateTodo = createAction(
   '$.todos[?(@ === {0})].text',
-  (todo, text, currentText, done) => text
+  (todo, text, currentText) => text
 )
 export const destroyTodo = createAction(
   '$.todos',
-  (todo, todos, done) => todos.filter((t) => todo !== t)
+  (todo, todos) => todos.filter((t) => todo !== t)
 )
 export const destroyCompleted = createAction(
   '$.todos',
-  (todos, done) => todos.filter((todo) => !todo.completed)
+  (todos) => todos.filter((todo) => !todo.completed)
 )
 const activeTodos = createGetter('$.todos[?(!@.completed)]')
 const toggleAllCompletedAction = createAction(
   '$.todos.*.completed',
-  (completed, _, done) => completed
+  (completed, _) => completed
 )
 export const toggleAllCompleted = () => {
   toggleAllCompletedAction(activeTodos().length > 0)
 }
 export const switchFilter = createAction(
   '$.visibility',
-  (newKey, oldKey, done) => newKey
+  (newKey, oldKey) => newKey
 )
 
 function getNewId(){

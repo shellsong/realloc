@@ -11,12 +11,12 @@ describe('create actionCreator', () => {
     }
 
     const {createAction, createActions} = actionCreatorFactory(() => obj.state, setterSpy)
-    const action = createAction('$.a',(b, done) => {
-      actionFnSpy(b, done)
+    const action = createAction('$.a',(b) => {
+      actionFnSpy(b)
       return {b:2}
     })
     action();
-    expect(actionFnSpy).toHaveBeenCalledWith(propsOfA, jasmine.any(Function));
+    expect(actionFnSpy).toHaveBeenCalledWith(propsOfA);
     expect(setterSpy).toHaveBeenCalledWith({a:{b:2}},[{pwd:['$'],name:'a',value:{b:1}}]);
   })
   it('deep update', () => {

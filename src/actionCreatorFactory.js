@@ -1,9 +1,6 @@
 import { clone, assign } from './utils'
 import Compiler from './JSONPathCompiler'
 
-function asyncUpdate(owner, pwd, name, $now, newValue){
-  // return pwd.reduce(($old, key) => $old[key], $now) === owner
-}
 function syncUpdate(pwd, name, $old, newValue){
   const $new = clone($old)
   const cur = pwd.reduce((pair, key) => {
@@ -26,15 +23,12 @@ function makeCallers(actionObj){
   const opts = assign({}, options)
   const compiler = new Compiler(keyPath)
   const matcher = compiler.createMatcher()
-  return (current, payloads) => {
+  return (current, payloads, collect) => {
     return matcher(current.state, payloads).reduce((cur, result) => {
       const pwd = result.pwd.slice(1)
       const name = result.name
       const value = callback.apply(result, payloads.concat(
-        [
-          result.value,
-          asyncUpdate
-        ]
+        [result.value]
       ))
       if(value !== (void 0)){
         return {
@@ -56,7 +50,7 @@ export default function actionCreatorFactory(select, collect){
         results:[]
       }
       const next = callers.reduce((car, caller) => {
-        return caller(car, payloads)
+        return caller(car, payloads, select, collect)
       }, current)
       if(current.state !== next.state){
         collect(next.state, next.results)
