@@ -19904,7 +19904,7 @@
 
 	var _store = __webpack_require__(164);
 
-	var createTodo = _store.createAction('$.todos[(@.length)]', function (text, _, done) {
+	var createTodo = _store.createAction('$.todos[(@.length)]', function (text, _) {
 	  if (text === undefined) text = '';
 
 	  var value = text.trim();
@@ -19917,35 +19917,35 @@
 	  }
 	});
 	exports.createTodo = createTodo;
-	var toggleTodo = _store.createAction('$.todos[?(@ === {0})].completed', function (todo, currentComplete, done) {
+	var toggleTodo = _store.createAction('$.todos[?(@ === {0})].completed', function (todo, currentComplete) {
 	  return !currentComplete;
 	});
 	exports.toggleTodo = toggleTodo;
-	var updateTodo = _store.createAction('$.todos[?(@ === {0})].text', function (todo, text, currentText, done) {
+	var updateTodo = _store.createAction('$.todos[?(@ === {0})].text', function (todo, text, currentText) {
 	  return text;
 	});
 	exports.updateTodo = updateTodo;
-	var destroyTodo = _store.createAction('$.todos', function (todo, todos, done) {
+	var destroyTodo = _store.createAction('$.todos', function (todo, todos) {
 	  return todos.filter(function (t) {
 	    return todo !== t;
 	  });
 	});
 	exports.destroyTodo = destroyTodo;
-	var destroyCompleted = _store.createAction('$.todos', function (todos, done) {
+	var destroyCompleted = _store.createAction('$.todos', function (todos) {
 	  return todos.filter(function (todo) {
 	    return !todo.completed;
 	  });
 	});
 	exports.destroyCompleted = destroyCompleted;
 	var activeTodos = _store.createGetter('$.todos[?(!@.completed)]');
-	var toggleAllCompletedAction = _store.createAction('$.todos.*.completed', function (completed, _, done) {
+	var toggleAllCompletedAction = _store.createAction('$.todos.*.completed', function (completed, _) {
 	  return completed;
 	});
 	var toggleAllCompleted = function toggleAllCompleted() {
 	  toggleAllCompletedAction(activeTodos().length > 0);
 	};
 	exports.toggleAllCompleted = toggleAllCompleted;
-	var switchFilter = _store.createAction('$.visibility', function (newKey, oldKey, done) {
+	var switchFilter = _store.createAction('$.visibility', function (newKey, oldKey) {
 	  return newKey;
 	});
 
@@ -20088,9 +20088,9 @@
 					return obj && obj.__esModule ? obj : { 'default': obj };
 				}
 
-				var _actionCreatorFactory = __webpack_require__(3);
+				var _actionCreatorFactory2 = __webpack_require__(3);
 
-				var _actionCreatorFactory2 = _interopRequireDefault(_actionCreatorFactory);
+				var _actionCreatorFactory3 = _interopRequireDefault(_actionCreatorFactory2);
 
 				var _JSONPathCompiler = __webpack_require__(5);
 
@@ -20128,7 +20128,8 @@
 							});
 						};
 					}
-					var createAction = _actionCreatorFactory2['default'](function () {
+
+					var _actionCreatorFactory = _actionCreatorFactory3['default'](function () {
 						return currentState.$;
 					}, function (nextState, results) {
 						var prevState = currentState.$;
@@ -20137,11 +20138,16 @@
 							return cb(currentState.$, prevState, results);
 						});
 					});
+
+					var createAction = _actionCreatorFactory.createAction;
+					var createActions = _actionCreatorFactory.createActions;
+
 					return {
 						getState: getState,
 						createGetter: createGetter,
 						subscribe: subscribe,
-						createAction: createAction
+						createAction: createAction,
+						createActions: createActions
 					};
 				}
 
@@ -20167,83 +20173,77 @@
 
 				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
 
-				function actionCreatorFactory(stateGetter, collect) {
-					// const createActions = (...actions) => {
-					//   actions.map((action) => {
-					//     const options = Object.assign({deps:[]}, action.options)
-					//     const compiler = new Compiler(action.keyPath)
-					//     const matcher = compiler.createMatcher()
-					//     return (...payloads) => {
-					//
-					//     }
-					//   })
-					//   return (...payloads) => {
-					//
-					//   }
-					// }
-					// const createAction = (keyPath, callback, options) => createActions({
-					//   keyPath,
-					//   callback,
-					//   options
-					// })
-					// return {
-					//   createAction,
-					//   createActions
+				function syncUpdate(pwd, name, $old, newValue) {
+					var $new = _utils.clone($old);
+					var cur = pwd.reduce(function (pair, key) {
+						pair[0][key] = _utils.clone(pair[1][key]);
+						return [pair[0][key], pair[1][key]];
+					}, [$new, $old]);
+					cur[0][name] = newValue;
+					return $new;
+				}
 
-					return function (keyPath, fn, opts) {
-						var options = Object.assign({ deps: [] }, opts);
-						var compiler = new _JSONPathCompiler2['default'](keyPath);
-						var matcher = compiler.createMatcher();
+				function makeCallers(actionObj) {
+					var keyPath = actionObj.keyPath;
+					var callback = actionObj.callback;
+					var options = actionObj.options;
+
+					var opts = _utils.assign({}, options);
+					var compiler = new _JSONPathCompiler2['default'](keyPath);
+					var matcher = compiler.createMatcher();
+					return function (current, payloads, collect) {
+						return matcher(current.state, payloads).reduce(function (cur, result) {
+							var pwd = result.pwd.slice(1);
+							var name = result.name;
+							var value = callback.apply(result, payloads.concat([result.value]));
+							if (value !== void 0) {
+								return {
+									state: name ? syncUpdate(pwd, name, cur.state, value) : value,
+									results: current.results.concat(result)
+								};
+							} else {
+								return cur;
+							}
+						}, current);
+					};
+				}
+
+				function actionCreatorFactory(select, collect) {
+					var createActions = function createActions() {
+						for (var _len = arguments.length, actions = Array(_len), _key = 0; _key < _len; _key++) {
+							actions[_key] = arguments[_key];
+						}
+
+						var callers = actions.map(makeCallers);
 						return function () {
-							for (var _len = arguments.length, payloads = Array(_len), _key = 0; _key < _len; _key++) {
-								payloads[_key] = arguments[_key];
+							for (var _len2 = arguments.length, payloads = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+								payloads[_key2] = arguments[_key2];
 							}
 
-							var $ = stateGetter();
-							var value = matcher($, payloads).reduce(function (accValue, result) {
-								var pwd = result.pwd.slice(1);
-								var set = function set(newValue) {
-									if (result.name === null) {
-										return newValue;
-									}
-									var $old = accValue.$;
-									var oldCur = $old;
-									var $new = _utils.clone(accValue.$);
-									var newCur = $new;
-									pwd.forEach(function (key) {
-										if (key !== null) {
-											newCur[key] = _utils.clone(oldCur[key]);
-											newCur = newCur[key];
-											oldCur = oldCur[key];
-										}
-									});
-									newCur[result.name] = newValue;
-									return $new;
-								};
-								var done = function done(newValue) {
-									//TODO async set : check value, do collect
-									stateGetter();
-									set(newValue);
-								};
-								var args = payloads.concat([result.value, done]);
-								var newValue = fn.apply(result, args);
-								if (newValue !== void 0) {
-									return {
-										$: set(newValue),
-										results: accValue.results.concat(result)
-									};
-								} else {
-									return accValue;
-								}
-							}, {
-								$: $,
+							var current = {
+								state: select(),
 								results: []
-							});
-							if (value.$ !== $) {
-								collect(value.$, value.results);
+							};
+							var next = callers.reduce(function (car, caller) {
+								return caller(car, payloads, select, collect);
+							}, current);
+							if (current.state !== next.state) {
+								collect(next.state, next.results);
 							}
-							return value;
+							return next;
 						};
+					};
+					var createAction = function createAction(keyPath, callback) {
+						var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+						return createActions({
+							keyPath: keyPath,
+							callback: callback,
+							options: options
+						});
+					};
+					return {
+						createAction: createAction,
+						createActions: createActions
 					};
 				}
 
@@ -20427,9 +20427,7 @@
 						};
 					} else if (resultType === 'PATH') {
 						getResult = function (v) {
-							return v.pwd.concat([v.name]).filter(function (v) {
-								return v !== null;
-							});
+							return v.pwd.concat([v.name]);
 						};
 					}
 					return new Compiler(expr).createMatcher()(source).map(getResult);
@@ -20449,13 +20447,10 @@
 						enumerable: true
 					}]);
 
-					function Compiler(exprs, notNormalized) {
+					function Compiler(exprStr) {
 						_classCallCheck(this, Compiler);
 
-						if (notNormalized !== false) {
-							exprs = parseJSONPath(exprs);
-						}
-						this.exprArray = exprs.map(function (lex) {
+						this.exprArray = parseJSONPath(exprStr).map(function (lex) {
 							return lex.replace(/\{([^\{]*)\}/g, function ($0, $1) {
 								return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0]') + $1 + '';
 							});
@@ -20645,8 +20640,7 @@
 	});
 	;
 	//# sourceMappingURL=index.js.map
-	/***/ /***/ /***/ /***/ // }
-	/***/ /***/ /***/
+	/***/ /***/ /***/ /***/ /***/ /***/ /***/
 
 /***/ },
 /* 166 */
