@@ -50,8 +50,9 @@ function matcherTestCaseFactory(expr, $, args, getTargetResults, getTarget){
   const results = ((new Compiler(expr)).createMatcher())($, args)
   const targetResults = getTargetResults(expr, $, args)
   results.forEach((result, i) => {
-    expect(result).toEqual(targetResults[i])
-    expect(result.value).toBe(targetResults[i].value)
+    const targetResult = targetResults[i]
+    expect(result).toEqual(targetResult)
+    expect(result.value).toBe(targetResult&&targetResult.value)
   })
   return {
     state:$,
@@ -259,37 +260,101 @@ describe('JSONPath Matcher', () => {
       }]
     })
   })
-  xit('should match $..', () => {
+  it('should match $..', () => {
     matcherTestCaseFactory('$..', source, [], (expr, $, args) => {
       return [{
-        pwd:['$'],
-        name:null,
+        pwd:[],
+        name:'$',
         value:$
       }, {
         pwd:['$'],
-        name:'book',
-        value:$.book
+        name:'store',
+        value:$.store
       }, {
-        pwd:['$', 'book'],
-        name:'null',
-        value:$
+        pwd:['$', 'store', 'book'],
+        name:0,
+        value:$.store.book[0]
+      }, {
+        pwd:['$', 'store', 'book'],
+        name:1,
+        value:$.store.book[1]
+      }, {
+        pwd:['$', 'store', 'book'],
+        name:2,
+        value:$.store.book[2]
       }, {
         pwd:['$'],
-        name:null,
-        value:$
+        name:'tree',
+        value:$.tree
+      }, {
+        pwd:['$', 'tree', 'nodes'],
+        name:0,
+        value:$.tree.nodes[0]
+      }, {
+        pwd:['$', 'tree', 'nodes', 0, 'nodes'],
+        name:0,
+        value:$.tree.nodes[0].nodes[0]
+      }, {
+        pwd:['$', 'tree', 'nodes', 0, 'nodes', 0, 'nodes'],
+        name:0,
+        value:$.tree.nodes[0].nodes[0].nodes[0]
+      }, {
+        pwd:['$', 'tree', 'nodes'],
+        name:1,
+        value:$.tree.nodes[1]
+      }, {
+        pwd:['$', 'tree', 'nodes', 1, 'nodes'],
+        name:0,
+        value:$.tree.nodes[1].nodes[0]
+      }, {
+        pwd:['$', 'tree', 'nodes', 1, 'nodes'],
+        name:1,
+        value:$.tree.nodes[1].nodes[1]
+      }, {
+        pwd:['$', 'tree', 'nodes'],
+        name:2,
+        value:$.tree.nodes[2]
       }]
     })
   })
-  xit('should match $.tree..', () => {
+  it('should match $.tree..', () => {
     matcherTestCaseFactory('$.tree..', source, [], (expr, $, args) => {
       return [{
         pwd:['$'],
         name:'tree',
-        value:$.store.tree
+        value:$.tree
+      },{
+        pwd:['$', 'tree', 'nodes'],
+        name:0,
+        value:$.tree.nodes[0]
+      },{
+        pwd:['$', 'tree', 'nodes', 0, 'nodes'],
+        name:0,
+        value:$.tree.nodes[0].nodes[0]
+      },{
+        pwd:['$', 'tree', 'nodes', 0, 'nodes', 0, 'nodes'],
+        name:0,
+        value:$.tree.nodes[0].nodes[0].nodes[0]
+      },{
+        pwd:['$', 'tree', 'nodes'],
+        name:1,
+        value:$.tree.nodes[1]
+      },{
+        pwd:['$', 'tree', 'nodes', 1, 'nodes'],
+        name:0,
+        value:$.tree.nodes[1].nodes[0]
+      },{
+        pwd:['$', 'tree', 'nodes', 1, 'nodes'],
+        name:1,
+        value:$.tree.nodes[1].nodes[1]
+      },{
+        pwd:['$', 'tree', 'nodes'],
+        name:2,
+        value:$.tree.nodes[2]
       }]
     })
   })
-  xit('should match $.tree..id', () => {
+  it('should match $.tree..id', () => {
     matcherTestCaseFactory('$.tree..id', source, [], (expr, $, args) => {
       return [{
         pwd:['$', 'tree'],

@@ -36,10 +36,10 @@ export default class Compiler {
         return [
           (input, ctx) => {
             return input +
-                  'var matches = [], $0 = $, pwd0 = "$";\n' +
+                  'var matches = [], $0 = $, pwd0 = ["$"];\n' +
                   (i === lastIndex?(
                   'matches.push({' +
-                    'pwd: [pwd0], ' +
+                    'pwd: pwd0, ' +
                     'name: null, ' +
                     'value: $0' +
                   '});\n'
@@ -47,16 +47,6 @@ export default class Compiler {
           },
           (input, ctx) => {
             return input +
-                  '\nvar newPwd0;\n'+
-                  '\nfor(var j = 0; j < matches.length; j ++){\n'+
-                    '\nnewPwd0 = [];'+
-                    '\nfor(var jj = 0; jj < matches[j].pwd.length; jj ++){\n'+
-                        '\nif(matches[j].pwd[jj] !== null){\n' +
-                            'newPwd0.push(matches[j].pwd[jj]);'+
-                        '\n}\n'+
-                    '\n}\n'+
-                    '\nmatches[j].pwd = newPwd0;'+
-                  '\n}\n'+
                   'return matches;'
           }
         ]
@@ -81,10 +71,10 @@ export default class Compiler {
           return input +
           '\n((function(){\n' +
               'var stop = false;var breakFn = function(){stop = true};\n' +
-            '\nreturn function recurfn'+lv+'(visit, parentCur, pwd, key, isRoot){\n' +
+            '\nreturn function recurfn'+lv+'(visit, parentCur, pwd, key){\n' +
                 'visit(parentCur, key, pwd, breakFn);\n' +
-                'var newPwd = key !== null ? pwd.concat(key) : pwd;\n' +
-              '\nif(stop === false && typeof parentCur === "object"){\n' +
+              '\nif(stop === false && (isPlainObject(parentCur)||isArray(parentCur))){\n' +
+                '\nvar newPwd = key === null ? pwd : pwd.concat([key]);\n' +
                 '\nvar parentCurKeys;\n'+
                 '\nif(isArray(parentCur)){\n'+
                   'parentCurKeys = range(parentCur.length);'+
@@ -107,20 +97,19 @@ export default class Compiler {
             'var $'+lv+' = recur;\n' +
             '\nif(isPlainObject($'+lv+')){\n'+
             (isLast?(
-            '\nvar matchesPwd = ['+range(0, lv - 1).map((i) => 'pwd' + i).join(', ')+'].concat(pwd);\n'+
             'matches.push({' +
-              'pwd: key === null ? matchesPwd.slice(0, matchesPwd.length - 1) : matchesPwd,' +
+              'pwd: key === null ? pwd.slice(0, pwd.length - 1) : pwd,' +
               'name: key === null ? pwd[pwd.length - 1] : key,'+
               'value: $' + lv +
             '});\n'
             ):(
-            'var pwd' + lv + ' = key;\n'
+            'var pwd' + lv + ' = key === null ? pwd : pwd.concat([key]);\n'
             ))
         },
         (input, ctx) => {
           return input +
               ('\n}\n')+
-            '\n},$'+(lv - 1)+', [], null, true))\n'
+            '\n},$'+(lv - 1)+', pwd'+(lv - 1)+', null))\n'
         }
       ]
     }else if('*' === expr){
@@ -142,13 +131,13 @@ export default class Compiler {
                     'var $' + lv + ' = $'+(lv - 1)+'[$$'+(lv-1)+'[i'+lv+']];\n' +
                     (isLast?(
                     'matches.push({' +
-                      'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                      'pwd: pwd' + (lv - 1) + ',' +
                       'name: $$'+(lv - 1)+'[i'+lv+'],'+
                       'value: $' + lv +
                     '});\n'
                     ):(
                     '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                    'var pwd' + lv + ' = $$'+(lv - 1)+'[i'+lv+'];\n'
+                    'var pwd' + lv + ' = pwd'+(lv - 1)+'.concat([$$'+(lv - 1)+'[i'+lv+']]);\n'
                     ))
         },
         (input, ctx) => {
@@ -166,13 +155,13 @@ export default class Compiler {
                     'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
                     (isLast?(
                     'matches.push({' +
-                      'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                      'pwd: pwd' + (lv - 1) + ',' +
                       'name: k'+lv+'[i'+lv+'],'+
                       'value: $' + lv +
                     '});\n'
                     ):(
                     '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                    'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
+                    'var pwd' + lv + ' = pwd'+(lv - 1)+'.concat([k' + lv +'[i'+lv+']]);\n'
                     ))
         },
         (input, ctx) => {
@@ -191,13 +180,13 @@ export default class Compiler {
                     'var $' + lv + ' = $'+(lv - 1)+'[k'+lv+'[i'+lv+']];\n' +
                     (isLast?(
                     'matches.push({' +
-                      'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                      'pwd: pwd' + (lv - 1) + ',' +
                       'name: k'+lv+'[i'+lv+'],'+
                       'value: $' + lv +
                     '});\n'
                     ):(
                     '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                    'var pwd' + lv + ' = k'+lv+'[i'+lv+'];\n'
+                    'var pwd' + lv + ' = pwd'+(lv - 1)+'.concat([k' + lv +'[i'+lv+']]);\n'
                     ))
         },
         (input, ctx) => {
@@ -217,13 +206,13 @@ export default class Compiler {
                       'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
                       (isLast?(
                       'matches.push({' +
-                        'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                        'pwd: pwd' + (lv - 1) + ',' +
                         'name: i'+lv+','+
                         'value: $' + lv +
                       '});\n'
                       ):(
                       '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                      'var pwd' + lv + ' = i' + lv +';\n'
+                      'var pwd' + lv + ' = pwd'+(lv - 1)+'.concat([i' + lv +']);\n'
                       ))
         },
         (input, ctx) => {
@@ -241,13 +230,13 @@ export default class Compiler {
                 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' +
                 (isLast?(
                 'matches.push({' +
-                  'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
+                  'pwd: pwd' + (lv - 1) + ',' +
                   'name: k'+lv+',' +
                   'value: $' + lv +
                 '});\n'
                 ):(
                 '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                'var pwd' + lv + ' = k' + lv +';\n'
+                'var pwd' + lv + ' = pwd'+(lv - 1)+'.concat([k' + lv +']);;\n'
                 ))
         },
         (input, ctx) => {
@@ -256,7 +245,7 @@ export default class Compiler {
                 ''
         }
       ]
-    }else if(/^\[.*\]$/.test(expr)){
+    }else if(/^\[.+\]$/.test(expr)){
       return [
         (input, ctx) => {
           var key = expr.substring(1, expr.length - 1)
@@ -265,13 +254,13 @@ export default class Compiler {
                 'var $' + lv + ' = $' + (lv - 1) + expr +';\n' +
                 (isLast?(
                 'matches.push({' +
-                  'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'], ' +
+                  'pwd: pwd' + (lv - 1) + ', ' +
                   'name: k'+lv+', ' +
                   'value: $' + lv +
                 '});\n'
                 ):(
                 '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                'var pwd' + lv + ' = k' + lv +';\n'
+                'var pwd' + lv + ' = pwd'+(lv - 1)+'.concat([k' + lv +']);\n'
                 ))
         },
         (input, ctx) => {
