@@ -54,9 +54,24 @@ describe('create actionCreator', () => {
       }
     }
     const {createAction, createActions} = actionCreatorFactory(() => obj.state, setterSpy)
-    const action = createAction('$', (k1, k2, c) => {
-    })
+    const action = createAction('$', ($) => {})
     action()
     expect(setterSpy).not.toHaveBeenCalled();
+  })
+  it('reset root', () => {
+    var a = {a:1}
+      , setterSpy = jasmine.createSpy('setterSpy')
+    var nextState
+    setterSpy.and.callFake((a) => {
+      nextState = a
+    })
+    const {createAction, createActions} = actionCreatorFactory(() => a, setterSpy)
+    const action = createAction('$', ($) => {
+      return {b:1}
+    }, {})
+    action()
+    expect(setterSpy).toHaveBeenCalled()
+    expect(nextState).not.toBe(a)
+    expect(nextState).toEqual({b:1})
   })
 })

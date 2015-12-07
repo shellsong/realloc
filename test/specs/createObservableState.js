@@ -2,7 +2,7 @@ import createObservableState from '../../src/createObservableState'
 
 describe('observable state', () => {
   it('with initial value', () => {
-    expect(createObservableState({a:1}).getState()).toEqual({a:1})
+    expect(createObservableState({a:1},{}).getState()).toEqual({a:1})
   })
   it('without initial value', () => {
     expect(createObservableState().getState()).toEqual({})

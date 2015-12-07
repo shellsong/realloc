@@ -46,183 +46,324 @@ describe('parse json path', () => {
     expect(parseJSONPath('$.store.{book}.{0.a}')).toEqual(['$','["store"]','[{["book"]}]','[{[0]["a"]}]'])
   })
 })
-var source = {
-  store:{
-    "book": [
-      { "category": "reference",
-        "author": "Nigel Rees",
-        "title": "Sayings of the Century",
-        "price": 8.95
-      },
-      { "category": "fiction",
-        "author": "Evelyn Waugh",
-        "title": "Sword of Honour",
-        "price": 12.99
-      },
-      { "category": "fiction",
-        "author": "Herman Melville",
-        "title": "Moby Dick",
-        "isbn": "0-553-21311-3",
-        "price": 8.99
-      },
-      { "category": "fiction",
-        "author": "J. R. R. Tolkien",
-        "title": "The Lord of the Rings",
-        "isbn": "0-395-19395-8",
-        "price": 22.99
-      }
-    ],
-    "bicycle": {
-      "color": "red",
-      "price": 19.95
-    },
-    "tree":{
-      "nodes":[{
-        nodes:[{
-          id:2
-        },{
-          id:3
-        }],
-        id:1
-      },{
-        id:4
-      }],
-      id:0
-    }
+function matcherTestCaseFactory(expr, $, args, getTargetResults, getTarget){
+  const results = ((new Compiler(expr)).createMatcher())($, args)
+  const targetResults = getTargetResults(expr, $, args)
+  results.forEach((result, i) => {
+    expect(result).toEqual(targetResults[i])
+    expect(result.value).toBe(targetResults[i].value)
+  })
+  return {
+    state:$,
+    results:results
   }
 }
-describe('create compiler', () => {
-  it('$', () => {
-    var compiler = new Compiler('$')
-    var fn = compiler.createMatcher()
-    var result = fn({a:1}, [])
-    expect(result.length).toBe(1)
-    expect(result[0]).toEqual({
-      pwd:['$'],
-      name:null,
-      value:{a:1}
-    })
-  })
-  it('only key with args', () => {
-    var compiler = new Compiler('$.store.{key}.{0.a}')
-    var args = [{
-      key:'book',
-      a:1
-    }]
-    var fn = compiler.createMatcher()
-
-    var result = fn(source, args)
-    expect(result.length).toBe(1)
-    expect(result[0]).toEqual({
-      pwd:['$', 'store', 'book'],
-      name:1,
-      value:{
-        "category": "fiction",
-        "author": "Evelyn Waugh",
-        "title": "Sword of Honour",
-        "price": 12.99
-      }
-    })
-  })
-  it('filter', () => {
-    var compiler = new Compiler('$.store.book[?(@.price<{c})]')
-    var args = [{
-      c:10
-    }]
-    var fn = compiler.createMatcher()
-    var result = fn(source, args)
-    expect(result).toEqual([{
-      pwd:['$', 'store', 'book'],
-      name:0,
-      value:{ "category": "reference",
-        "author": "Nigel Rees",
-        "title": "Sayings of the Century",
-        "price": 8.95
-      }
-    },{
-      pwd:['$', 'store', 'book'],
-      name:2,
-      value:{ "category": "fiction",
-        "author": "Herman Melville",
-        "title": "Moby Dick",
-        "isbn": "0-553-21311-3",
-        "price": 8.99
-      }
-    }])
-  })
-  it('[,]', () => {
-    var compiler = new Compiler('$.store.book[0,2].price')
-    var fn = compiler.createMatcher()
-    var result = fn(source)
-    expect(result).toEqual([{
-      pwd:['$', 'store', 'book', 0],
-      name:'price',
-      value:8.95
-    },{
-      pwd:['$', 'store', 'book', 2],
-      name:'price',
-      value:8.99
-    }])
-  })
-  it('range', () => {
-    var compiler = new Compiler('$.store.book[0:3].price')
-    var fn = compiler.createMatcher()
-    var result = fn(source)
-    expect(result).toEqual([{
-      pwd:['$', 'store', 'book', 0],
-      name:'price',
-      value:8.95
-    },{
-      pwd:['$', 'store', 'book', 1],
-      name:'price',
-      value:12.99
-    },{
-      pwd:['$', 'store', 'book', 2],
-      name:'price',
-      value:8.99
-    }])
-  })
-  it('*, all values', () => {
-    var compiler = new Compiler('$.store.book.*.price')
-    var fn = compiler.createMatcher()
-    var result = fn(source)
-    expect(result.map((r) => r.value)).toEqual([8.95, 12.99, 8.99, 22.99])
-  })
-  it('recursive descent', () => {
-    var compiler = new Compiler('$.store.tree..nodes[?(@.id === 1 || @.id === 2)]')
-    var fn = compiler.createMatcher()
-    var result = fn(source)
-    expect(result.map((r) => r.value.id)).toEqual([1, 2])
-  })
-  it('recursive descent 2', () => {
-    var s = {
-      "tree":{
+describe('JSONPath Matcher', () => {
+  let source
+  beforeEach(() => {
+    source = {
+      store:{
+        book:[{title:'Book A'},{title:'Book B'},{title:'Book C'}],
+      },
+      tree:{
         id:0,
-        "nodes":[{
+        nodes:[{
+          id:1,
           nodes:[{
-            id:2
-          },{
-            id:3
-          }],
-          id:1
+            id:2,
+            nodes:[{
+              id:3
+            }]
+          }]
         },{
-          id:4
+          id:4,
+          nodes:[{
+            id:5
+          },{
+            id:6
+          }]
+        },{
+          id:7,
+          nodes:[]
         }]
       }
     }
-    var compiler0 = new Compiler('$.tree..')
-    var fn0 = compiler0.createMatcher()
-    var result0 = fn0(s).map((r) => r.value)
-    expect(result0.length).toBe(5)
-    expect(result0[0].id).toBe(s.tree.id)
-    expect(result0[1].id).toBe(s.tree.nodes[0].id)
-    expect(result0[2].id).toBe(s.tree.nodes[0].nodes[0].id)
-    expect(result0[3].id).toBe(s.tree.nodes[0].nodes[1].id)
-    expect(result0[4].id).toBe(s.tree.nodes[1].id)
+  })
+  it('$', () => {
+    matcherTestCaseFactory('$',source, [], (expr, $, args) => {
+      return [{
+        pwd:['$'],
+        name:null,
+        value:$
+      }]
+    })
+  })
+  it('match $.{name}.book', () => {
+    matcherTestCaseFactory('$.{name}.book', source, [{
+      name:'store'
+    }], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store'],
+        name:'book',
+        value:$.store.book
+      }]
+    })
+  })
+  it('should match $.store.{key}.{0.a}', () => {
+    matcherTestCaseFactory('$.store.{key}.{0.a}', source, [{
+      key:'book',
+      a:1
+    }], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book'],
+        name:1,
+        value:$.store.book[1]
+      }]
+    })
+  })
+  it('should match $.store.{key}[(@.length - 1)]', () => {
+    matcherTestCaseFactory('$.store.{key}[(@.length - 1)]', source, [{
+      key:'book'
+    }], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book'],
+        name:$.store.book.length - 1,
+        value:$.store.book[$.store.book.length - 1]
+      }]
+    })
+  })
+  it('should match $.store.{key}[(@.length - {1})].title', () => {
+    matcherTestCaseFactory('$.store.{key}[(@.length - 1)].title', source, [{
+      key:'book'
+    }, 1], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book', $.store.book.length - args[1]],
+        name:'title',
+        value:$.store.book[$.store.book.length - 1].title
+      }]
+    })
+  })
+  it('should match $.store.book[?(@.title[@.title.length - 1] === {0})]', () => {
+    matcherTestCaseFactory('$.store.book[?(@.title[@.title.length - 1] === {0})]'
+    , source, ['B'], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book'],
+        name:1,
+        value:$.store.book[1]
+      }]
+    })
+  })
+  it('should match $.store.book[?(@.title[@.title.length - 1] === {0})].title', () => {
+    matcherTestCaseFactory('$.store.book[?(@.title[@.title.length - 1] === {0})].title'
+    , source, ['B'], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book', 1],
+        name:'title',
+        value:'Book B'
+      }]
+    })
+  })
+  it('should match $.store.book[0,2]', () => {
+    matcherTestCaseFactory('$.store.book[0,2]', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book'],
+        name:0,
+        value:$.store.book[0]
+      },{
+        pwd:['$', 'store', 'book'],
+        name:2,
+        value:$.store.book[2]
+      }]
+    })
+  })
+  it('should match $.store.book[0,2].undef', () => {
+    matcherTestCaseFactory('$.store.book[0,2].undef', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book', 0],
+        name:'undef',
+        value:undefined
+      },{
+        pwd:['$', 'store', 'book', 2],
+        name:'undef',
+        value:undefined
+      }]
+    })
+  })
+  it('should match $.store.book[0,2].title', () => {
+    matcherTestCaseFactory('$.store.book[0,2].title', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book', 0],
+        name:'title',
+        value:$.store.book[0].title
+      },{
+        pwd:['$', 'store', 'book', 2],
+        name:'title',
+        value:$.store.book[2].title
+      }]
+    })
+  })
+  it('should match $.store.book[0:2]', () => {
+    matcherTestCaseFactory('$.store.book[0:2]', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book'],
+        name:0,
+        value:$.store.book[0]
+      },{
+        pwd:['$', 'store', 'book'],
+        name:1,
+        value:$.store.book[1]
+      }]
+    })
+  })
+  it('should match $.store.book[0:2].title', () => {
+    matcherTestCaseFactory('$.store.book[0:2].title', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book', 0],
+        name:'title',
+        value:$.store.book[0].title
+      },{
+        pwd:['$', 'store', 'book', 1],
+        name:'title',
+        value:$.store.book[1].title
+      }]
+    })
+  })
+  it('should match $.store.book.*.title', () => {
+    matcherTestCaseFactory('$.store.book.*.title', source, [], (expr, $, args) => {
+      return source.store.book.map((book, i) => {
+        return {
+          pwd:['$', 'store', 'book', i],
+          name:'title',
+          value:book.title
+        }
+      })
+    })
+  })
+  it('should match $.store.book.*', () => {
+    matcherTestCaseFactory('$.store.book.*', source, [], (expr, $, args) => {
+      return source.store.book.map((book, i) => {
+        return {
+          pwd:['$', 'store', 'book'],
+          name:i,
+          value:book
+        }
+      })
+    })
+  })
+  it('should match $.store.*', () => {
+    matcherTestCaseFactory('$.store.*', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store'],
+        name:'book',
+        value:$.store.book
+      }]
+    })
+  })
+  xit('should match $..', () => {
+    matcherTestCaseFactory('$..', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$'],
+        name:null,
+        value:$
+      }, {
+        pwd:['$'],
+        name:'book',
+        value:$.book
+      }, {
+        pwd:['$', 'book'],
+        name:'null',
+        value:$
+      }, {
+        pwd:['$'],
+        name:null,
+        value:$
+      }]
+    })
+  })
+  xit('should match $.tree..', () => {
+    matcherTestCaseFactory('$.tree..', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$'],
+        name:'tree',
+        value:$.store.tree
+      }]
+    })
+  })
+  xit('should match $.tree..id', () => {
+    matcherTestCaseFactory('$.tree..id', source, [], (expr, $, args) => {
+      return [{
+        pwd:['$', 'tree'],
+        name:'id',
+        value:$.tree.id
+      }, {
+        pwd:['$', 'tree', 'nodes', 0],
+        name:'id',
+        value:$.tree.nodes[0].id
+      }, {
+        pwd:['$', 'tree', 'nodes', 0, 'nodes', 0],
+        name:'id',
+        value:$.tree.nodes[0].nodes[0].id
+      }, {
+        pwd:['$', 'tree', 'nodes', 0, 'nodes', 0, 'nodes', 0],
+        name:'id',
+        value:$.tree.nodes[0].nodes[0].nodes[0].id
+      }, {
+        pwd:['$', 'tree', 'nodes', 1],
+        name:'id',
+        value:$.tree.nodes[1].id
+      }, {
+        pwd:['$', 'tree', 'nodes', 1, 'nodes', 0],
+        name:'id',
+        value:$.tree.nodes[1].nodes[0].id
+      }, {
+        pwd:['$', 'tree', 'nodes', 1, 'nodes', 1],
+        name:'id',
+        value:$.tree.nodes[1].nodes[1].id
+      }, {
+        pwd:['$', 'tree', 'nodes', 2],
+        name:'id',
+        value:$.tree.nodes[2].id
+      }]
+    })
   })
 })
 
-describe('json path function impl', () => {
+describe('JSONPath legacy implment', () => {
+  let source
+  beforeEach(() => {
+    source = {
+      "store": {
+        "book": [
+          { "category": "reference",
+            "author": "Nigel Rees",
+            "title": "Sayings of the Century",
+            "price": 8.95
+          },
+          { "category": "fiction",
+            "author": "Evelyn Waugh",
+            "title": "Sword of Honour",
+            "price": 12.99
+          },
+          { "category": "fiction",
+            "author": "Herman Melville",
+            "title": "Moby Dick",
+            "isbn": "0-553-21311-3",
+            "price": 8.99
+          },
+          { "category": "fiction",
+            "author": "J. R. R. Tolkien",
+            "title": "The Lord of the Rings",
+            "isbn": "0-395-19395-8",
+            "price": 22.99
+          }
+        ],
+        "bicycle": {
+          "color": "red",
+          "price": 19.95
+        }
+      }
+    }
+  })
   it('should return match values', () => {
     expect(JSONPath(source,'$.store.book.*.price')).toEqual([8.95, 12.99, 8.99, 22.99])
   })

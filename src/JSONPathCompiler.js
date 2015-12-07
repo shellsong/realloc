@@ -70,6 +70,7 @@ export default class Compiler {
         return fn(isPlainObject, isArray, hasOwnProperty, range, $, args)
       }
     }catch(e){
+      // istanbul ignore next
       throw new Error(e + '\nfunction matcher($, args){\n' + body + '\n}')
     }
   }
@@ -142,12 +143,12 @@ export default class Compiler {
                     (isLast?(
                     'matches.push({' +
                       'pwd: ['+range(0, lv).map((i) => 'pwd' + i).join(', ')+'],' +
-                      'name: i'+lv+','+
+                      'name: $$'+(lv - 1)+'[i'+lv+'],'+
                       'value: $' + lv +
                     '});\n'
                     ):(
                     '\nif(isPlainObject($'+lv+')||isArray($'+lv+')){\n'+
-                    'var pwd' + lv + ' = i'+lv+';\n'
+                    'var pwd' + lv + ' = $$'+(lv - 1)+'[i'+lv+'];\n'
                     ))
         },
         (input, ctx) => {
@@ -211,7 +212,7 @@ export default class Compiler {
           return input +
                 '\nfor(var i'+lv+' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i'+lv+'++){\n' +
                     'if(' +
-                      expr.substring(1).replace(/@/g,'$'+(lv - 1)+'[i'+lv+']') +
+                      expr.substring(1).replace(/@/g, '$'+(lv - 1)+'[i'+lv+']') +
                     '){\n'+
                       'var $' + lv + ' = $'+(lv - 1)+'[i'+lv+'];\n' +
                       (isLast?(
@@ -236,7 +237,7 @@ export default class Compiler {
       return [
         (input, ctx) => {
           return input +
-                'var k'+lv+ ' = ' + expr.replace(/@/g,'$' + (lv - 1)) + ';\n' +
+                'var k'+lv+ ' = ' + expr.replace(/@/g, '$' + (lv - 1)) + ';\n' +
                 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' +
                 (isLast?(
                 'matches.push({' +
@@ -280,6 +281,7 @@ export default class Compiler {
         }
       ]
     }else{
+      // istanbul ignore next
       throw new Error('unexpected expression: '+expr+'')
     }
   }
