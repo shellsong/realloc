@@ -274,8 +274,8 @@ describe('JSONPath Matcher', () => {
   it('should match $..', () => {
     matcherTestCaseFactory('$..', source, [], (expr, $, args) => {
       return [{
-        pwd:[],
-        name:'$',
+        pwd:['$'],
+        name:null,
         value:$
       }, {
         pwd:['$'],

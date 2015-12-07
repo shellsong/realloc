@@ -55,7 +55,7 @@ export default class Compiler {
       }
     }))
     try{
-      let fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body)
+      var fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body)
       return function matcher($, args){
         return fn(isPlainObject, isArray, hasOwnProperty, range, $, args)
       }
@@ -98,8 +98,8 @@ export default class Compiler {
             '\nif(isPlainObject($'+lv+')){\n'+
             (isLast?(
             'matches.push({' +
-              'pwd: key === null ? pwd.slice(0, pwd.length - 1) : pwd,' +
-              'name: key === null ? pwd[pwd.length - 1] : key,'+
+              'pwd: key === null && $' + lv + ' !== $0 ? pwd.slice(0, pwd.length - 1) : pwd,' +
+              'name: key === null && $' + lv + ' !== $0 ? pwd[pwd.length - 1] : key,'+
               'value: $' + lv +
             '});\n'
             ):(
