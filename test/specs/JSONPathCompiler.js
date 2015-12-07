@@ -144,6 +144,17 @@ describe('JSONPath Matcher', () => {
       }]
     })
   })
+  it('should match $.store.{key}[(@.length)]', () => {
+    matcherTestCaseFactory('$.store.{key}[(@.length)]', source, [{
+      key:'book'
+    }], (expr, $, args) => {
+      return [{
+        pwd:['$', 'store', 'book'],
+        name:$.store.book.length,
+        value:undefined
+      }]
+    })
+  })
   it('should match $.store.book[?(@.title[@.title.length - 1] === {0})]', () => {
     matcherTestCaseFactory('$.store.book[?(@.title[@.title.length - 1] === {0})]'
     , source, ['B'], (expr, $, args) => {

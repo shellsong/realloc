@@ -32,7 +32,7 @@ function makeCallers(actionObj){
       ))
       if(value !== (void 0)){
         return {
-          state:name ? syncUpdate(pwd, name, cur.state, value) : value,
+          state:name !== null ? syncUpdate(pwd, name, cur.state, value) : value,
           results:current.results.concat(result)
         }
       }else{

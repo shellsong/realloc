@@ -60,6 +60,7 @@ describe('create actionCreator', () => {
   })
   it('reset root', () => {
     var a = {a:1}
+      , b = {b:1}
       , setterSpy = jasmine.createSpy('setterSpy')
     var nextState
     setterSpy.and.callFake((a) => {
@@ -67,11 +68,11 @@ describe('create actionCreator', () => {
     })
     const {createAction, createActions} = actionCreatorFactory(() => a, setterSpy)
     const action = createAction('$', ($) => {
-      return {b:1}
+      return b
     }, {})
     action()
     expect(setterSpy).toHaveBeenCalled()
     expect(nextState).not.toBe(a)
-    expect(nextState).toEqual({b:1})
+    expect(nextState).toBe(b)
   })
 })

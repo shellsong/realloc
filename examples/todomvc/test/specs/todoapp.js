@@ -1,14 +1,15 @@
 import {getState, createAction} from '../../js/store'
 import {createTodo, toggleTodo, toggleAllCompleted, updateTodo, destroyTodo, destroyCompleted} from '../../js/actions'
-const resetTodoApp = createAction('$', (_, done) => ({
+const resetTodoApp = createAction('$', (_) => ({
   todos:[],
   visibility:'all'
 }))
 describe('todoapp', () => {
   beforeEach(() => {
     resetTodoApp()
-    let {todos, areAllComplete} = getState()
+    let {todos, visibility} = getState()
     expect(todos).toEqual([])
+    expect(visibility).toBe('all')
   })
   it('create a todo', () => {
     createTodo('test createTodo')
