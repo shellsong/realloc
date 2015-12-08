@@ -23,7 +23,7 @@ function makeCallers(actionObj){
   const opts = assign({}, options)
   const compiler = new Compiler(keyPath)
   const matcher = compiler.createMatcher()
-  return (current, payloads, collect) => {
+  return (current, payloads) => {
     return matcher(current.state, payloads).reduce((cur, result) => {
       const pwd = result.pwd.slice(1)
       const name = result.name
