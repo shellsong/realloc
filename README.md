@@ -4,7 +4,7 @@ Realloc
 [![Coverage Status](https://img.shields.io/coveralls/foomorrow/realloc.svg)](https://coveralls.io/r/foomorrow/realloc?branch=master)
 [![npm version](https://img.shields.io/npm/v/realloc.svg)](https://www.npmjs.com/package/realloc)
 [![npm downloads](https://img.shields.io/npm/dm/realloc.svg)](https://www.npmjs.com/package/realloc)
-## Install
+## Installation
 ```sh
 npm i -S realloc
 ```
