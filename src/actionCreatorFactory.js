@@ -16,12 +16,12 @@ function syncUpdate(pwd, name, $old, newValue){
 
 function makeCallers(actionObj){
   const {
-    keyPath,
+    expr,
     callback,
     options
   } = actionObj
   const opts = assign({}, options)
-  const compiler = new Compiler(keyPath)
+  const compiler = new Compiler(expr)
   const matcher = compiler.createMatcher()
   return (current, payloads) => {
     return matcher(current.state, payloads).reduce((cur, result) => {
@@ -58,8 +58,8 @@ export default function actionCreatorFactory(select, collect){
       return next
     }
   }
-  const createAction = (keyPath, callback, options = {}) => createActions({
-    keyPath,
+  const createAction = (expr, callback, options = {}) => createActions({
+    expr,
     callback,
     options
   })
