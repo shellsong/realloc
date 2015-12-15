@@ -19977,7 +19977,7 @@
 	  visibility: window.location.hash ? window.location.hash.replace(/^#/, '') : 'all'
 	};
 
-	exports['default'] = _realloc.createObservableState(initialState);
+	exports['default'] = _realloc.createState(initialState);
 	module.exports = exports['default'];
 
 /***/ },
@@ -20062,14 +20062,10 @@
 
 				var _JSONPathCompiler = __webpack_require__(5);
 
-				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
-
-				var _utils = __webpack_require__(4);
-
 				exports['default'] = {
-					createObservableState: _createObservableState2['default'],
+					createState: _createObservableState2['default'],
 					actionCreatorFactory: _actionCreatorFactory2['default'],
-					Compiler: _JSONPathCompiler2['default'],
+					createJSONPathMatcher: _JSONPathCompiler.createJSONPathMatcher,
 					JSONPath: _JSONPathCompiler.JSONPath
 				};
 				module.exports = exports['default'];
@@ -20094,8 +20090,6 @@
 
 				var _JSONPathCompiler = __webpack_require__(5);
 
-				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
-
 				function createObservableState() {
 					var initialState = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 					var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
@@ -20116,8 +20110,7 @@
 						return currentState.$;
 					}
 					function createGetter(path) {
-						var compiler = new _JSONPathCompiler2['default'](path);
-						var matcher = compiler.createMatcher();
+						var matcher = _JSONPathCompiler.createJSONPathMatcher(path);
 						return function () {
 							for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 								args[_key] = arguments[_key];
@@ -20163,15 +20156,9 @@
 				exports.__esModule = true;
 				exports['default'] = actionCreatorFactory;
 
-				function _interopRequireDefault(obj) {
-					return obj && obj.__esModule ? obj : { 'default': obj };
-				}
-
 				var _utils = __webpack_require__(4);
 
 				var _JSONPathCompiler = __webpack_require__(5);
-
-				var _JSONPathCompiler2 = _interopRequireDefault(_JSONPathCompiler);
 
 				function syncUpdate(pwd, name, $old, newValue) {
 					var $new = _utils.clone($old);
@@ -20184,14 +20171,13 @@
 				}
 
 				function makeCallers(actionObj) {
-					var keyPath = actionObj.keyPath;
+					var expr = actionObj.expr;
 					var callback = actionObj.callback;
 					var options = actionObj.options;
 
 					var opts = _utils.assign({}, options);
-					var compiler = new _JSONPathCompiler2['default'](keyPath);
-					var matcher = compiler.createMatcher();
-					return function (current, payloads, collect) {
+					var matcher = _JSONPathCompiler.createJSONPathMatcher(expr);
+					return function (current, payloads) {
 						return matcher(current.state, payloads).reduce(function (cur, result) {
 							var pwd = result.pwd.slice(1);
 							var name = result.name;
@@ -20233,10 +20219,10 @@
 							return next;
 						};
 					};
-					var createAction = function createAction(keyPath, callback) {
+					var createAction = function createAction(expr, callback) {
 						var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 						return createActions({
-							keyPath: keyPath,
+							expr: expr,
 							callback: callback,
 							options: options
 						});
@@ -20389,25 +20375,12 @@
 				'use strict';
 
 				exports.__esModule = true;
-
-				var _createClass = (function () {
-					function defineProperties(target, props) {
-						for (var i = 0; i < props.length; i++) {
-							var descriptor = props[i];descriptor.enumerable = descriptor.enumerable || false;descriptor.configurable = true;if ('value' in descriptor) descriptor.writable = true;Object.defineProperty(target, descriptor.key, descriptor);
-						}
-					}return function (Constructor, protoProps, staticProps) {
-						if (protoProps) defineProperties(Constructor.prototype, protoProps);if (staticProps) defineProperties(Constructor, staticProps);return Constructor;
-					};
-				})();
+				exports.parseJSONPath = parseJSONPath;
+				exports.createJSONPathMatcher = createJSONPathMatcher;
+				exports.JSONPath = JSONPath;
 
 				function _interopRequireDefault(obj) {
 					return obj && obj.__esModule ? obj : { 'default': obj };
-				}
-
-				function _classCallCheck(instance, Constructor) {
-					if (!(instance instanceof Constructor)) {
-						throw new TypeError('Cannot call a class as a function');
-					}
 				}
 
 				var _utils = __webpack_require__(4);
@@ -20415,6 +20388,95 @@
 				var _lexers = __webpack_require__(6);
 
 				var _lexers2 = _interopRequireDefault(_lexers);
+
+				var argsRegExpr = /\{([^\{]*)\}/g;
+				var isArgIndexRegExpr = /^\[\d+\]/;
+
+				function parseJSONPath(expr) {
+					return _utils.stackProcess(expr, _lexers2['default']);
+				}
+
+				function _parseExpr(expr, lv, isLast) {
+					if ('..' === expr) {
+						return [function (input, ctx) {
+							return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, parentCur, pwd, key){\n' + 'visit(parentCur, key, pwd, breakFn);\n' + '\nif(stop === false && (isPlainObject(parentCur)||isArray(parentCur))){\n' + '\nvar newPwd = key === null ? pwd : pwd.concat([key]);\n' + '\nvar parentCurKeys;\n' + '\nif(isArray(parentCur)){\n' + 'parentCurKeys = range(parentCur.length);' + '\n}else{\n' + 'parentCurKeys = [];' + '\nfor(var k in parentCur){\n' + '\nif(hasOwnProperty.call(parentCur,k)){\n' + 'parentCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < parentCurKeys.length; i++){\n' + '\nif(stop === false ){\n' + 'recurfn' + lv + '(visit, parentCur[parentCurKeys[i]], newPwd, parentCurKeys[i]);' + '\n}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + '\nif(isPlainObject($' + lv + ')){\n' + (isLast ? 'matches.push({' + 'pwd: key === null && $' + lv + ' !== $0 ? pwd.slice(0, pwd.length - 1) : pwd,' + 'name: key === null && $' + lv + ' !== $0 ? pwd[pwd.length - 1] : key,' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = key === null ? pwd : pwd.concat([key]);\n');
+						}, function (input, ctx) {
+							return input + '\n}\n' + '\n},$' + (lv - 1) + ', pwd' + (lv - 1) + ', null))\n';
+						}];
+					} else if ('*' === expr) {
+						return [function (input, ctx) {
+							return input + '\nvar $$' + (lv - 1) + ';\n' + '\nif(isArray($' + (lv - 1) + ')){\n' + '$$' + (lv - 1) + ' = range($' + (lv - 1) + '.length);' + '\n}else{\n' + '$$' + (lv - 1) + ' = [];' + '\nfor(var k' + lv + ' in $' + (lv - 1) + '){\n' + '\nif(hasOwnProperty.call($' + (lv - 1) + ',k' + lv + ')){\n' + '$$' + (lv - 1) + '.push(k' + lv + ');\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i' + lv + ' = 0;i' + lv + ' < $$' + (lv - 1) + '.length;i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[$$' + (lv - 1) + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: $$' + (lv - 1) + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([$$' + (lv - 1) + '[i' + lv + ']]);\n');
+						}, function (input, ctx) {
+							return input + (isLast ? '' : '\n}\n') + '\n}\n';
+						}];
+					} else if (/^\d+(,\d+)*$/.test(expr)) {
+						return [function (input, ctx) {
+							return input + '\nvar k' + lv + ' = [' + expr + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + '[i' + lv + ']]);\n');
+						}, function (input, ctx) {
+							return input + (isLast ? '' : '\n}\n') + '\n}\n';
+						}];
+					} else if (/^\d+(:\d+){0,2}$/.test(expr)) {
+						return [function (input, ctx) {
+							var indexes = _utils.range.apply(null, expr.split(':').map(function (i) {
+								return parseInt(i);
+							}));
+							return input + '\nvar k' + lv + ' = [' + indexes.join(', ') + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + '[i' + lv + ']]);\n');
+						}, function (input, ctx) {
+							return input + (isLast ? '' : '\n}\n') + '\n}\n';
+						}];
+					} else if (/^\?\(.*\)$/.test(expr)) {
+						return [function (input, ctx) {
+							return input + '\nfor(var i' + lv + ' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i' + lv + '++){\n' + 'if(' + expr.substring(1).replace(/@/g, '$' + (lv - 1) + '[i' + lv + ']') + '){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([i' + lv + ']);\n');
+						}, function (input, ctx) {
+							return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
+						}];
+					} else if (/^\(.*\)$/.test(expr)) {
+						return [function (input, ctx) {
+							return input + 'var k' + lv + ' = ' + expr.replace(/@/g, '$' + (lv - 1)) + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + ']);;\n');
+						}, function (input, ctx) {
+							return input + (isLast ? '' : '\n}\n') + '';
+						}];
+					} else if (/^\[.+\]$/.test(expr)) {
+						return [function (input, ctx) {
+							var key = expr.substring(1, expr.length - 1);
+							return input + 'var k' + lv + ' = ' + key + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + expr + ';\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ', ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + ']);\n');
+						}, function (input, ctx) {
+							return input + (isLast ? '' : '\n}\n') + '';
+						}];
+					} else {
+						// istanbul ignore next
+						throw new Error('unexpected expression: ' + expr + '');
+					}
+				}
+
+				function createJSONPathMatcher(expr) {
+					var normalizedExprArray = parseJSONPath(expr).map(function (token) {
+						return token.replace(argsRegExpr, function ($0, $1) {
+							return 'args' + (isArgIndexRegExpr.test($1) ? '' : '[0]') + $1;
+						});
+					});
+					var lastIndex = normalizedExprArray.length - 1;
+					var body = _utils.stackProcess('', normalizedExprArray.map(function (expr, i) {
+						if (i === 0) {
+							return [function (input, ctx) {
+								return input + 'var matches = [], $0 = $, pwd0 = ["$"];\n' + (i === lastIndex ? 'matches.push({' + 'pwd: pwd0, ' + 'name: null, ' + 'value: $0' + '});\n' : '');
+							}, function (input, ctx) {
+								return input + 'return matches;';
+							}];
+						} else {
+							return _parseExpr(expr, i, i === lastIndex);
+						}
+					}));
+					try {
+						var fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body);
+						return function matcher($, args) {
+							return fn(_utils.isPlainObject, _utils.isArray, _utils.hasOwnProperty, _utils.range, $, args);
+						};
+					} catch (e) {
+						// istanbul ignore next
+						throw new Error(e + '\nfunction matcher($, args){\n' + body + '\n}');
+					}
+				}
 
 				function JSONPath(source, expr) {
 					var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
@@ -20430,123 +20492,8 @@
 							return v.pwd.concat([v.name]);
 						};
 					}
-					return new Compiler(expr).createMatcher()(source).map(getResult);
+					return createJSONPathMatcher(expr)(source).map(getResult);
 				}
-				function parseJSONPath(expr) {
-					return _utils.stackProcess(expr, _lexers2['default']);
-				}
-
-				var Compiler = (function () {
-					_createClass(Compiler, null, [{
-						key: 'JSONPath',
-						value: JSONPath,
-						enumerable: true
-					}, {
-						key: 'parseJSONPath',
-						value: parseJSONPath,
-						enumerable: true
-					}]);
-
-					function Compiler(exprStr) {
-						_classCallCheck(this, Compiler);
-
-						this.exprArray = parseJSONPath(exprStr).map(function (lex) {
-							return lex.replace(/\{([^\{]*)\}/g, function ($0, $1) {
-								return 'args' + (/^\[\d+\]/.test($1) ? '' : '[0]') + $1 + '';
-							});
-						});
-					}
-
-					Compiler.prototype.createMatcher = function createMatcher() {
-						var _this = this;
-
-						var lastIndex = this.exprArray.length - 1;
-						var body = _utils.stackProcess('', this.exprArray.map(function (expr, i) {
-							if (i === 0) {
-								return [function (input, ctx) {
-									return input + 'var matches = [], $0 = $, pwd0 = ["$"];\n' + (i === lastIndex ? 'matches.push({' + 'pwd: pwd0, ' + 'name: null, ' + 'value: $0' + '});\n' : '');
-								}, function (input, ctx) {
-									return input + 'return matches;';
-								}];
-							} else {
-								return _this._parseExpr(expr, i, i === lastIndex);
-							}
-						}));
-						try {
-							var _ret = (function () {
-								var fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body);
-								return {
-									v: function matcher($, args) {
-										return fn(_utils.isPlainObject, _utils.isArray, _utils.hasOwnProperty, _utils.range, $, args);
-									}
-								};
-							})();
-
-							if (typeof _ret === 'object') return _ret.v;
-						} catch (e) {
-							// istanbul ignore next
-							throw new Error(e + '\nfunction matcher($, args){\n' + body + '\n}');
-						}
-					};
-
-					Compiler.prototype._parseExpr = function _parseExpr(expr, lv, isLast) {
-						if ('..' === expr) {
-							return [function (input, ctx) {
-								return input + '\n((function(){\n' + 'var stop = false;var breakFn = function(){stop = true};\n' + '\nreturn function recurfn' + lv + '(visit, parentCur, pwd, key){\n' + 'visit(parentCur, key, pwd, breakFn);\n' + '\nif(stop === false && (isPlainObject(parentCur)||isArray(parentCur))){\n' + '\nvar newPwd = key === null ? pwd : pwd.concat([key]);\n' + '\nvar parentCurKeys;\n' + '\nif(isArray(parentCur)){\n' + 'parentCurKeys = range(parentCur.length);' + '\n}else{\n' + 'parentCurKeys = [];' + '\nfor(var k in parentCur){\n' + '\nif(hasOwnProperty.call(parentCur,k)){\n' + 'parentCurKeys.push(k);\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i = 0; i < parentCurKeys.length; i++){\n' + '\nif(stop === false ){\n' + 'recurfn' + lv + '(visit, parentCur[parentCurKeys[i]], newPwd, parentCurKeys[i]);' + '\n}\n' + '}\n' + '}\n' + '}\n' + '}())(function(recur, key, pwd, breakFn){\n' + 'var $' + lv + ' = recur;\n' + '\nif(isPlainObject($' + lv + ')){\n' + (isLast ? 'matches.push({' + 'pwd: key === null ? pwd.slice(0, pwd.length - 1) : pwd,' + 'name: key === null ? pwd[pwd.length - 1] : key,' + 'value: $' + lv + '});\n' : 'var pwd' + lv + ' = key === null ? pwd : pwd.concat([key]);\n');
-							}, function (input, ctx) {
-								return input + '\n}\n' + '\n},$' + (lv - 1) + ', pwd' + (lv - 1) + ', null))\n';
-							}];
-						} else if ('*' === expr) {
-							return [function (input, ctx) {
-								return input + '\nvar $$' + (lv - 1) + ';\n' + '\nif(isArray($' + (lv - 1) + ')){\n' + '$$' + (lv - 1) + ' = range($' + (lv - 1) + '.length);' + '\n}else{\n' + '$$' + (lv - 1) + ' = [];' + '\nfor(var k' + lv + ' in $' + (lv - 1) + '){\n' + '\nif(hasOwnProperty.call($' + (lv - 1) + ',k' + lv + ')){\n' + '$$' + (lv - 1) + '.push(k' + lv + ');\n' + '\n}\n' + '\n}\n' + '\n}\n' + '\nfor(var i' + lv + ' = 0;i' + lv + ' < $$' + (lv - 1) + '.length;i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[$$' + (lv - 1) + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: $$' + (lv - 1) + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([$$' + (lv - 1) + '[i' + lv + ']]);\n');
-							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n';
-							}];
-						} else if (/^\d+(,\d+)*$/.test(expr)) {
-							return [function (input, ctx) {
-								return input + '\nvar k' + lv + ' = [' + expr + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + '[i' + lv + ']]);\n');
-							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n';
-							}];
-						} else if (/^\d+(:\d+){0,2}$/.test(expr)) {
-							return [function (input, ctx) {
-								var indexes = _utils.range.apply(null, expr.split(':').map(function (i) {
-									return parseInt(i);
-								}));
-								return input + '\nvar k' + lv + ' = [' + indexes.join(', ') + '];\n' + '\nfor(var i' + lv + ' = 0; i' + lv + ' < k' + lv + '.length; i' + lv + '++){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '[i' + lv + ']];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: k' + lv + '[i' + lv + '],' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + '[i' + lv + ']]);\n');
-							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n';
-							}];
-						} else if (/^\?\(.*\)$/.test(expr)) {
-							return [function (input, ctx) {
-								return input + '\nfor(var i' + lv + ' = 0; i' + lv + ' < $' + (lv - 1) + '.length; i' + lv + '++){\n' + 'if(' + expr.substring(1).replace(/@/g, '$' + (lv - 1) + '[i' + lv + ']') + '){\n' + 'var $' + lv + ' = $' + (lv - 1) + '[i' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: i' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([i' + lv + ']);\n');
-							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '\n}\n' + '\n}\n';
-							}];
-						} else if (/^\(.*\)$/.test(expr)) {
-							return [function (input, ctx) {
-								return input + 'var k' + lv + ' = ' + expr.replace(/@/g, '$' + (lv - 1)) + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + '[k' + lv + '];\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ',' + 'name: k' + lv + ',' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + ']);;\n');
-							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '';
-							}];
-						} else if (/^\[.+\]$/.test(expr)) {
-							return [function (input, ctx) {
-								var key = expr.substring(1, expr.length - 1);
-								return input + 'var k' + lv + ' = ' + key + ';\n' + 'var $' + lv + ' = $' + (lv - 1) + expr + ';\n' + (isLast ? 'matches.push({' + 'pwd: pwd' + (lv - 1) + ', ' + 'name: k' + lv + ', ' + 'value: $' + lv + '});\n' : '\nif(isPlainObject($' + lv + ')||isArray($' + lv + ')){\n' + 'var pwd' + lv + ' = pwd' + (lv - 1) + '.concat([k' + lv + ']);\n');
-							}, function (input, ctx) {
-								return input + (isLast ? '' : '\n}\n') + '';
-							}];
-						} else {
-							// istanbul ignore next
-							throw new Error('unexpected expression: ' + expr + '');
-						}
-					};
-
-					return Compiler;
-				})();
-
-				exports['default'] = Compiler;
-				module.exports = exports['default'];
 
 				/***/
 			},

@@ -4,7 +4,7 @@ var path = require('path')
   , webpack = require('webpack')
 
 module.exports = {
-  watch:true,
+  watch:false,
   devtool:'cheap-module-source-map',
   amd:true,
   context:path.join(__dirname, '.', 'js'),

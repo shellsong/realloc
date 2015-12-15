@@ -1,5 +1,5 @@
 import actionCreatorFactory from './actionCreatorFactory'
-import Compiler from './JSONPathCompiler'
+import { createJSONPathMatcher } from './JSONPathCompiler'
 export default function createObservableState(initialState = {}, options = {}){
   let currentState = {
     $:initialState
@@ -15,8 +15,7 @@ export default function createObservableState(initialState = {}, options = {}){
     return currentState.$
   }
   function createGetter(path){
-    const compiler = new Compiler(path)
-    const matcher = compiler.createMatcher()
+    const matcher = createJSONPathMatcher(path)
     return (...args) => {
       return matcher(currentState.$, args).map((v) => v.value)
     }

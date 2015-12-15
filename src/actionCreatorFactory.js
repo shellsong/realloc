@@ -1,5 +1,5 @@
 import { clone, assign } from './utils'
-import Compiler from './JSONPathCompiler'
+import { createJSONPathMatcher } from './JSONPathCompiler'
 
 function syncUpdate(pwd, name, $old, newValue){
   const $new = clone($old)
@@ -21,8 +21,7 @@ function makeCallers(actionObj){
     options
   } = actionObj
   const opts = assign({}, options)
-  const compiler = new Compiler(expr)
-  const matcher = compiler.createMatcher()
+  const matcher = createJSONPathMatcher(expr)
   return (current, payloads) => {
     return matcher(current.state, payloads).reduce((cur, result) => {
       const pwd = result.pwd.slice(1)

@@ -1,4 +1,4 @@
-import Compiler, { parseJSONPath, JSONPath } from '../../src/JSONPathCompiler'
+import { createJSONPathMatcher, parseJSONPath, JSONPath } from '../../src/JSONPathCompiler'
 describe('parse json path', () => {
   it('$', () => {
     expect(parseJSONPath('$')).toEqual(['$'])
@@ -47,7 +47,7 @@ describe('parse json path', () => {
   })
 })
 function matcherTestCaseFactory(expr, $, args, getTargetResults, getTarget){
-  const results = ((new Compiler(expr)).createMatcher())($, args)
+  const results = createJSONPathMatcher(expr)($, args)
   const targetResults = getTargetResults(expr, $, args)
   results.forEach((result, i) => {
     const targetResult = targetResults[i]

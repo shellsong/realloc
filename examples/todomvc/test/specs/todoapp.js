@@ -1,5 +1,15 @@
-import {getState, createAction} from '../../js/store'
-import {createTodo, toggleTodo, toggleAllCompleted, updateTodo, destroyTodo, destroyCompleted} from '../../js/actions'
+import {
+  getState,
+  createAction
+} from '../../js/store'
+import {
+  createTodo,
+  toggleTodo,
+  toggleAllCompleted,
+  updateTodo,
+  destroyTodo,
+  destroyCompleted
+} from '../../js/actions'
 const resetTodoApp = createAction('$', (_) => ({
   todos:[],
   visibility:'all'

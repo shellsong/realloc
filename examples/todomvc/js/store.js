@@ -1,4 +1,4 @@
-import { createObservableState } from 'realloc'
+import { createState } from 'realloc'
 import {visibilityFilters} from './constants'
 
 let visibility = window.location.hash.replace(/^#/,'')
@@ -12,4 +12,4 @@ let initialState = {
   visibility:window.location.hash?window.location.hash.replace(/^#/,''):'all'
 }
 
-export default createObservableState(initialState)
+export default createState(initialState)

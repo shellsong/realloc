@@ -12,13 +12,13 @@ npm i -S realloc
 
 ### Tutorial
 ```javascript
-import { createObservableState } from 'realloc'
+import { createState } from 'realloc'
 //create a counter store
 const {
   getState,
   createAction,
   subscribe
-} = createObservableState({
+} = createState({
   count:0
 })
 // create a increment action for the store
@@ -52,7 +52,7 @@ incrementNumAction(5)
 ```
 ### Using JSONPath
 ```javascript
-import { createObservableState } from 'realloc'
+import { createState } from 'realloc'
 const initialState = {
   "store": {
     "book": [
@@ -94,7 +94,7 @@ const {
   createAction,
   createGetter,
   subscribe
-} = createObservableState(initialState)
+} = createState(initialState)
 const unsubscribe = subscribe((nextState, prevState) => {
 	console.log("log: ", nextState, prevState)
 })

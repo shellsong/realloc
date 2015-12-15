@@ -5,7 +5,7 @@
   "main": "js/main.js",
   "scripts": {
     "prestart":"npm install",
-    "start": "webpack --config webpack.dev.js",
+    "build":"webpack --config webpack.dev.js",
     "test": "JASMINE_CONFIG_PATH=test/support/jasmine.json jasmine"
   },
   "author": "foomorrow",

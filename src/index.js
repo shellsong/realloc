@@ -1,10 +1,9 @@
-import createObservableState from './createObservableState'
+import createState from './createObservableState'
 import actionCreatorFactory from './actionCreatorFactory'
-import Compiler, { JSONPath } from './JSONPathCompiler'
-import { compose } from './utils'
+import { createJSONPathMatcher, JSONPath } from './JSONPathCompiler'
 export default {
-  createObservableState,
+  createState,
   actionCreatorFactory,
-  Compiler,
+  createJSONPathMatcher,
   JSONPath
 }
