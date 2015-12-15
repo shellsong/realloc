@@ -4,7 +4,7 @@ export default function createObservableState(initialState = {}, options = {}){
   const currentState = {
     $:initialState
   }
-  const subscribers = []
+  var subscribers = []
   function subscribe(callback){
     subscribers = subscribers.concat(callback)
     return () => {
