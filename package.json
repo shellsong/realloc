@@ -4,7 +4,7 @@
   "description": "Observable and Immutable State Manager Base On JSONPath For Javascript Applications",
   "main": "lib/index.js",
   "scripts": {
-    "build": "webpack --config ./config/webpack.dev.js",
+    "build": "webpack --config ./webpack.dev.js",
     "test": "npm run lint && JASMINE_CONFIG_PATH=test/support/jasmine.json istanbul cover jasmine",
     "travis-test": "JASMINE_CONFIG_PATH=test/support/jasmine.json istanbul cover jasmine && (cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js)",
     "lint": "eslint src",
