@@ -29,19 +29,13 @@ const decrementAction = createAction('$.count', (currentCount) => currentCount -
 const unsubscribe = subscribe((nextState, prevState) => {
 	console.log("log: ", nextState, prevState)
 })
-// call the increment action
-incrementAction()
+incrementAction() // call the increment action
 // state of the store will change,
 // => log: {count:1} {count:0}
-
-// call the increment action again
-incrementAction()
+incrementAction() // call the increment action again
 // state of the store will change again
 // => log: {count:2} {count:1}
-getState() // {count:2}
-
-// call the decrement action
-decrementAction()
+decrementAction() // call the decrement action
 // => log: {count:1} {count:2}
 
 // create a action that increment with params
@@ -55,34 +49,29 @@ incrementNumAction(5)
 import { createState } from 'realloc'
 const initialState = {
   "store": {
-    "book": [
-      {
-        "category": "reference",
-        "author": "Nigel Rees",
-        "title": "Sayings of the Century",
-        "price": 8.95
-      },
-      {
-        "category": "fiction",
-        "author": "Evelyn Waugh",
-        "title": "Sword of Honour",
-        "price": 12.99
-      },
-      {
-        "category": "fiction",
-        "author": "Herman Melville",
-        "title": "Moby Dick",
-        "isbn": "0-553-21311-3",
-        "price": 8.99
-      },
-      {
-        "category": "fiction",
-        "author": "J. R. R. Tolkien",
-        "title": "The Lord of the Rings",
-        "isbn": "0-395-19395-8",
-        "price": 22.99
-      }
-    ],
+    "book": [{
+      "category": "reference",
+      "author": "Nigel Rees",
+      "title": "Sayings of the Century",
+      "price": 8.95
+    }, {
+      "category": "fiction",
+      "author": "Evelyn Waugh",
+      "title": "Sword of Honour",
+      "price": 12.99
+    }, {
+      "category": "fiction",
+      "author": "Herman Melville",
+      "title": "Moby Dick",
+      "isbn": "0-553-21311-3",
+      "price": 8.99
+    }, {
+      "category": "fiction",
+      "author": "J. R. R. Tolkien",
+      "title": "The Lord of the Rings",
+      "isbn": "0-395-19395-8",
+      "price": 22.99
+    }],
     "bicycle": {
       "color": "red",
       "price": 19.95
@@ -99,41 +88,19 @@ const unsubscribe = subscribe((nextState, prevState) => {
 	console.log("log: ", nextState, prevState)
 })
 const getBookTitlesByPriceGTTen = createGetter('$.store.book[?(@.price > 10)].title')
+
 getBookByPriceGTTen()
 // => ["Sword of Honour", "The Lord of the Rings"]
 
-const updateBookCategoryWithPrice = createAction('$.store.book[?(@.price > {price})].category', (payload, currentCategory) => payload.text + currentCategory )
+const updateBookCategoryWithPrice = createAction(
+  '$.store.book[?(@.price > {price})].category',
+  (payload, currentCategory) => payload.text + currentCategory
+)
+// call the update action
 updateBookCategoryWithPrice({
   price:10,
   text:'famous '
 })
-getState().store.book
-
-// => [{
-//     "category": "reference",
-//     "author": "Nigel Rees",
-//     "title": "Sayings of the Century",
-//     "price": 8.95
-//   },
-//   {
-//     "category": "famous fiction",
-//     "author": "Evelyn Waugh",
-//     "title": "Sword of Honour",
-//     "price": 12.99
-//   },
-//   {
-//     "category": "fiction",
-//     "author": "Herman Melville",
-//     "title": "Moby Dick",
-//     "isbn": "0-553-21311-3",
-//     "price": 8.99
-//   },
-//   {
-//     "category": "famous fiction",
-//     "author": "J. R. R. Tolkien",
-//     "title": "The Lord of the Rings",
-//     "isbn": "0-395-19395-8",
-//     "price": 22.99
-//   }]
-
+getState().store.book.map(book => book.category)
+// => ["reference", "famous fiction", "fiction", "famous fiction"]
 ```
