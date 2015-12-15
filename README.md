@@ -27,7 +27,7 @@ const incrementAction = createAction('$.count', (currentCount) => currentCount +
 const decrementAction = createAction('$.count', (currentCount) => currentCount - 1)
 // set a subscriber for the store
 const unsubscribe = subscribe((nextState, prevState) => {
-	console.log("log: ", nextState, prevState)
+  console.log("log: ", nextState, prevState)
 })
 incrementAction() // call the increment action
 // state of the store will change,
@@ -85,7 +85,7 @@ const {
   subscribe
 } = createState(initialState)
 const unsubscribe = subscribe((nextState, prevState) => {
-	console.log("log: ", nextState, prevState)
+  console.log("log: ", nextState, prevState)
 })
 const getBookTitlesByPriceGTTen = createGetter('$.store.book[?(@.price > 10)].title')
 

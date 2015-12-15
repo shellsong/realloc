@@ -1,10 +1,10 @@
 import actionCreatorFactory from './actionCreatorFactory'
 import { createJSONPathMatcher } from './JSONPathCompiler'
 export default function createObservableState(initialState = {}, options = {}){
-  let currentState = {
+  const currentState = {
     $:initialState
   }
-  let subscribers = []
+  const subscribers = []
   function subscribe(callback){
     subscribers = subscribers.concat(callback)
     return () => {
@@ -21,7 +21,7 @@ export default function createObservableState(initialState = {}, options = {}){
     }
   }
   const {createAction, createActions} = actionCreatorFactory(() => currentState.$, (nextState, results) => {
-    let prevState = currentState.$
+    const prevState = currentState.$
     currentState.$ = nextState
     subscribers.forEach((cb) => cb(currentState.$, prevState, results))
   })

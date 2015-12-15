@@ -7,10 +7,8 @@ import {
 } from './utils'
 import lexers from './lexers'
 
-
 const argsRegExpr = /\{([^\{]*)\}/g
 const isArgIndexRegExpr = /^\[\d+\]/
-
 
 export function parseJSONPath(expr){
   return stackProcess(expr, lexers)
@@ -256,9 +254,7 @@ export function createJSONPathMatcher(expr){
   }))
   try{
     var fn = new Function('isPlainObject', 'isArray', 'hasOwnProperty', 'range', '$', 'args', body)
-    return function matcher($, args){
-      return fn(isPlainObject, isArray, hasOwnProperty, range, $, args)
-    }
+    return fn.bind(null, isPlainObject, isArray, hasOwnProperty, range)
   }catch(e){
     // istanbul ignore next
     throw new Error(e + '\nfunction matcher($, args){\n' + body + '\n}')
@@ -266,12 +262,14 @@ export function createJSONPathMatcher(expr){
 }
 
 export function JSONPath(source, expr, options = {}){
-  let resultType = (options.resultType||'value').toUpperCase()
-  let getResult
+  const resultType = (options.resultType||'value').toUpperCase()
+  var getResult
   if(resultType === 'VALUE'){
     getResult = (v) => v.value
   }else if(resultType === 'PATH'){
     getResult = (v) => v.pwd.concat([v.name])
+  }else{
+    throw new Error('resultType must be "VALUE" or "PATH"')
   }
   return createJSONPathMatcher(expr)(source).map(getResult)
 }
