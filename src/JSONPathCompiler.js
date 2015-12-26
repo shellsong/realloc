@@ -269,6 +269,7 @@ export function JSONPath(source, expr, options = {}){
   }else if(resultType === 'PATH'){
     getResult = (v) => v.pwd.concat([v.name])
   }else{
+    // istanbul ignore next
     throw new Error('resultType must be "VALUE" or "PATH"')
   }
   return createJSONPathMatcher(expr)(source).map(getResult)

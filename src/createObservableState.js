@@ -20,11 +20,14 @@ export default function createObservableState(initialState = {}, options = {}){
       return matcher(currentState.$, args).map((v) => v.value)
     }
   }
-  const {createAction, createActions} = actionCreatorFactory(() => currentState.$, (nextState, results) => {
-    const prevState = currentState.$
-    currentState.$ = nextState
-    subscribers.forEach((cb) => cb(currentState.$, prevState, results))
-  })
+  const {createAction, createActions} = actionCreatorFactory(
+    () => currentState.$,
+    (nextState, results) => {
+      const prevState = currentState.$
+      currentState.$ = nextState
+      subscribers.forEach((cb) => cb(currentState.$, prevState, results))
+    }
+  )
   return {
     getState,
     createGetter,
